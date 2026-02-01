@@ -26,8 +26,10 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
     if (!merchant || !amount) return null;
     
     // Format: {ussd_base_code}{MERCHANT_NUMBER}*{AMOUNT}#
-    // Example: 71261XXXXXXX*10.00#
-    const formattedAmount = parseFloat(amount).toFixed(2);
+    // Example: *712*619535029*0.5#
+    // Remove trailing zeros after decimal
+    const numAmount = parseFloat(amount);
+    const formattedAmount = numAmount % 1 === 0 ? numAmount.toString() : parseFloat(numAmount.toFixed(2)).toString();
     return `${merchant.ussd_base_code}${merchant.phone_number}*${formattedAmount}#`;
   };
 
