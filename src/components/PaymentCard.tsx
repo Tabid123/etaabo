@@ -6,9 +6,10 @@ interface PaymentCardProps {
   merchant: Merchant | null;
   isLoading: boolean;
   error: Error | null;
+  noMerchantParam?: boolean;
 }
 
-const PaymentCard = ({ merchant, isLoading, error }: PaymentCardProps) => {
+const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCardProps) => {
   const [amount, setAmount] = useState("");
   const [dialerError, setDialerError] = useState<string | null>(null);
 
@@ -63,14 +64,33 @@ const PaymentCard = ({ merchant, isLoading, error }: PaymentCardProps) => {
     );
   }
 
-  // Error state
+  // No merchant parameter provided
+  if (noMerchantParam) {
+    return (
+      <div className="relative flex w-full max-w-[480px] flex-col overflow-hidden bg-card rounded-lg shadow-card border border-border min-h-[600px] items-center justify-center p-6">
+        <Store className="w-16 h-16 text-primary mb-4" />
+        <h2 className="text-xl font-bold text-foreground mb-2">Bogga Lacag Bixinta</h2>
+        <p className="text-muted-foreground text-center mb-4">
+          Si aad lacag u bixiso, u isticmaal link-ga uu ganacsadaha kuu siiyey.
+        </p>
+        <div className="bg-secondary rounded-lg p-4 w-full">
+          <p className="text-xs text-muted-foreground text-center mb-2">Tusaale:</p>
+          <code className="text-sm text-primary block text-center font-mono">
+            /pay?merchant=shop001
+          </code>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - merchant not found
   if (error || !merchant) {
     return (
       <div className="relative flex w-full max-w-[480px] flex-col overflow-hidden bg-card rounded-lg shadow-card border border-border min-h-[600px] items-center justify-center p-6">
         <AlertCircle className="w-16 h-16 text-destructive mb-4" />
-        <h2 className="text-xl font-bold text-foreground mb-2">Merchant Not Found</h2>
+        <h2 className="text-xl font-bold text-foreground mb-2">Ganacsade Lama Helin</h2>
         <p className="text-muted-foreground text-center">
-          The payment link is invalid or the merchant is no longer active.
+          Link-ga lacag bixintu ma shaqeynayo ama ganacsaduhu ma firfircona.
         </p>
       </div>
     );

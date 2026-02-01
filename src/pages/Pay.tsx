@@ -8,12 +8,16 @@ const Pay = () => {
   
   const { data: merchant, isLoading, error } = useMerchant(merchantId);
 
+  // If no merchant ID provided, show helpful message
+  const noMerchantParam = !merchantId;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <PaymentCard 
         merchant={merchant ?? null} 
-        isLoading={isLoading} 
+        isLoading={isLoading && !noMerchantParam} 
         error={error as Error | null}
+        noMerchantParam={noMerchantParam}
       />
     </div>
   );
