@@ -6,44 +6,76 @@
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/700.css";
 @import "@fontsource/inter/900.css";
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap");
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
 
 /* Somali Tap-to-Pay USSD Design System */
 
 @layer base {
   :root {
-    --background: 210 14% 97%; /* #f6f7f8 */
-    --foreground: 213 32% 12%; /* slate-900 */
+
+    --background: 248 100% 99%; /* #faf8ff */
+    --foreground: 224 39% 13%; /* #131b2e */
 
     --card: 0 0% 100%;
-    --card-foreground: 213 32% 12%;
+    --card-foreground: 224 39% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 213 32% 12%;
+    --popover-foreground: 224 39% 13%;
 
-    --primary: 209 87% 50%; /* #137fec */
+    --primary: 219 100% 39%; /* #004ac6 Vibrant Blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 18% 96%; /* slate-100 */
-    --secondary-foreground: 213 32% 12%;
+    --secondary: 230 100% 97%; /* #f2f3ff */
+    --secondary-foreground: 224 39% 13%;
 
-    --muted: 210 18% 96%;
-    --muted-foreground: 213 25% 45%; /* #4c739a */
+    --muted: 230 100% 97%;
+    --muted-foreground: 230 12% 30%; /* #434655 */
 
-    --accent: 210 18% 96%;
-    --accent-foreground: 213 32% 12%;
+    --accent: 229 100% 94%; /* #eaedff */
+    --accent-foreground: 224 39% 13%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 75% 42%; /* #ba1a1a */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 18% 90%;
-    --input: 210 18% 90%;
-    --ring: 209 87% 50%;
+    --border: 230 30% 80%; /* #c3c6d7 */
+    --input: 230 30% 92%;
+    --ring: 219 100% 39%;
 
-    --radius: 1rem;
+    --radius: 0.5rem;
+
+    /* Brand specifics */
+    --success: 141 100% 22%; /* #006e2d Leaf Green */
+    --success-foreground: 0 0% 100%;
+    --warning: 36 100% 24%; /* #784b00 */
+    --warning-foreground: 0 0% 100%;
+
+    /* Gradient for promo banner */
+    --gradient-promo: linear-gradient(135deg, hsl(219 100% 39%) 0%, hsl(219 90% 56%) 50%, hsl(155 70% 55%) 100%);
 
     /* Custom tokens */
-    --payment-shadow: 0 10px 40px -10px hsl(209 87% 50% / 0.3);
-    --card-shadow: 0 4px 20px -4px hsl(213 32% 12% / 0.08);
+    --payment-shadow: 0 10px 30px -10px hsl(219 100% 39% / 0.35);
+    --card-shadow: 0 2px 8px 0 hsl(224 39% 13% / 0.04);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -102,7 +134,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   }
 
   /* Hide number input spinners */
