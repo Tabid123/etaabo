@@ -12,10 +12,10 @@ const Pay = () => {
   const noMerchantParam = !merchantId;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <PaymentCard 
-        merchant={merchant ?? null} 
-        isLoading={isLoading && !noMerchantParam} 
+    <div className="min-h-screen bg-background">
+      <PaymentCard
+        merchant={merchant ?? null}
+        isLoading={isLoading && !noMerchantParam}
         error={error as Error | null}
         noMerchantParam={noMerchantParam}
       />
