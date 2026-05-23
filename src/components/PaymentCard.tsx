@@ -1,13 +1,6 @@
 import { useState } from "react";
-import { Store, Send, ShieldCheck, AlertCircle } from "lucide-react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
+import { Store, AlertCircle } from "lucide-react";
 import type { Merchant } from "@/hooks/useMerchant";
-import storeBanner from "@/assets/store-banner.jpg";
-import promoBanner from "@/assets/promo-banner.jpg";
 
 interface PaymentCardProps {
   merchant: Merchant | null;
@@ -21,35 +14,17 @@ type PaymentMethod = "evc" | "edahab" | "premier";
 const PAYMENT_METHODS: {
   id: PaymentMethod;
   label: string;
-  activeClass: string;
+  icon: string;
 }[] = [
-  {
-    id: "evc",
-    label: "EVC Plus",
-    activeClass:
-      "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  },
-  {
-    id: "edahab",
-    label: "eDahab",
-    activeClass:
-      "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  },
-  {
-    id: "premier",
-    label: "Premier",
-    activeClass:
-      "border-primary bg-primary/10 text-primary",
-  },
+  { id: "evc", label: "EVC Plus", icon: "account_balance_wallet" },
+  { id: "edahab", label: "eDahab", icon: "payments" },
+  { id: "premier", label: "Premier", icon: "account_balance" },
 ];
-
-const PROMO_SLIDES = [promoBanner, promoBanner, promoBanner];
 
 const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCardProps) => {
   const [amount, setAmount] = useState("");
   const [dialerError, setDialerError] = useState<string | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("evc");
-  const [activeSlide, setActiveSlide] = useState(0);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -96,7 +71,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
 
   if (noMerchantParam) {
     return (
-      <div className="w-full max-w-[480px] bg-card rounded-2xl shadow-card border border-border min-h-[400px] flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-[480px] bg-card rounded-2xl shadow-card border border-border min-h-[400px] flex flex-col items-center justify-center p-6 mx-auto mt-6">
         <Store className="w-16 h-16 text-primary mb-4" />
         <h2 className="text-xl font-bold mb-2">Bogga Lacag Bixinta</h2>
         <p className="text-muted-foreground text-center mb-4">
@@ -113,7 +88,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
 
   if (error || !merchant) {
     return (
-      <div className="w-full max-w-[480px] bg-card rounded-2xl shadow-card border border-border min-h-[400px] flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-[480px] bg-card rounded-2xl shadow-card border border-border min-h-[400px] flex flex-col items-center justify-center p-6 mx-auto mt-6">
         <AlertCircle className="w-16 h-16 text-destructive mb-4" />
         <h2 className="text-xl font-bold mb-2">Ganacsade Lama Helin</h2>
         <p className="text-muted-foreground text-center">
@@ -123,49 +98,26 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
     );
   }
 
-  const bannerImage = merchant.logo_url || storeBanner;
-
   return (
-    <div className="w-full max-w-[480px] mx-auto flex flex-col min-h-screen bg-background">
-      {/* Promo Carousel */}
-      <div className="px-3 pt-3">
-        <Carousel
-          opts={{ loop: true }}
-          setApi={(api) => {
-            if (!api) return;
-            api.on("select", () => setActiveSlide(api.selectedScrollSnap()));
-          }}
-          className="rounded-2xl overflow-hidden"
-        >
-          <CarouselContent>
-            {PROMO_SLIDES.map((src, i) => (
-              <CarouselItem key={i}>
-                <img
-                  src={src}
-                  alt={`Promotion ${i + 1}`}
-                  className="w-full h-28 object-cover rounded-2xl"
-                  loading={i === 0 ? "eager" : "lazy"}
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-        <div className="flex justify-center gap-1.5 mt-2">
-          {PROMO_SLIDES.map((_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                activeSlide === i ? "w-5 bg-primary" : "w-1.5 bg-border"
-              }`}
-            />
-          ))}
-        </div>
+    <div className="w-full max-w-[480px] mx-auto flex flex-col min-h-screen px-5 pt-5 pb-6 gap-5">
+      {/* Promo Banner */}
+      <div
+        className="relative rounded-xl overflow-hidden p-5 text-white"
+        style={{ background: "var(--gradient-promo)" }}
+      >
+        <h2 className="text-2xl font-extrabold leading-tight">
+          Mobile<br />Payment
+        </h2>
+        <p className="text-sm font-medium mt-1 opacity-90">
+          Buy our system payment App...
+        </p>
+        <span className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/25 backdrop-blur-sm" />
       </div>
 
-      {/* Overlapping Card */}
-      <div className="relative mt-8 mx-3 bg-card rounded-3xl shadow-card border border-border pt-14 pb-6 px-6 flex-1 flex flex-col">
+      {/* Payment Card */}
+      <div className="bg-card rounded-xl shadow-card border border-border/60 px-6 pt-7 pb-6 flex flex-col">
         {/* Merchant Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2 -top-10 w-20 h-20 rounded-full bg-card border-4 border-card shadow-card overflow-hidden flex items-center justify-center">
+        <div className="mx-auto w-16 h-16 rounded-full bg-secondary border border-border/60 overflow-hidden flex items-center justify-center">
           {merchant.logo_url ? (
             <img
               src={merchant.logo_url}
@@ -173,20 +125,20 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-secondary flex items-center justify-center">
-              <Store className="w-10 h-10 text-primary" />
-            </div>
+            <Store className="w-8 h-8 text-primary" />
           )}
         </div>
 
-        {/* Name + subtitle */}
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-foreground">{merchant.name}</h1>
-          <p className="text-sm text-muted-foreground mt-1">Payment</p>
-        </div>
+        {/* Name */}
+        <h1 className="mt-3 text-center text-2xl font-bold text-foreground tracking-tight">
+          {merchant.name}
+        </h1>
+        <p className="text-center text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase mt-1">
+          Payment
+        </p>
 
-        {/* Amount input */}
-        <div className="mt-6 flex flex-col items-center">
+        {/* Amount */}
+        <div className="mt-6 flex items-baseline justify-center gap-2">
           <input
             type="number"
             inputMode="decimal"
@@ -194,36 +146,43 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
             value={amount}
             onChange={handleAmountChange}
             autoFocus
-            className="w-full text-center text-5xl font-bold text-foreground bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-muted-foreground/40"
+            className="w-[60%] text-center text-5xl font-extrabold text-foreground bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-foreground/80 tracking-tight"
           />
-          <div className="mt-2 inline-flex items-center gap-1 bg-secondary px-3 py-1 rounded-full text-xs font-bold text-muted-foreground uppercase tracking-widest">
+          <span className="text-base font-bold text-muted-foreground uppercase">
             {merchant.currency}
-          </div>
+          </span>
         </div>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          Lacagta lagu bixinayo {merchant.currency}
+        </p>
 
-        {/* Payment Method Selector */}
-        <div className="mt-7">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Select Payment Method
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {PAYMENT_METHODS.map((m) => {
-              const isActive = method === m.id;
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => setMethod(m.id)}
-                  className={`relative h-11 rounded-xl border-2 text-sm font-semibold transition-all duration-300 ease-out ${
-                    isActive
-                      ? `${m.activeClass} scale-[1.03] shadow-sm`
-                      : "border-border bg-secondary text-muted-foreground hover:border-muted-foreground/30"
-                  }`}
+        {/* Methods */}
+        <p className="mt-7 text-center text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+          Select Payment Method
+        </p>
+        <div className="mt-3 grid grid-cols-3 gap-2.5">
+          {PAYMENT_METHODS.map((m) => {
+            const isActive = method === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => setMethod(m.id)}
+                className={`flex flex-col items-center justify-center gap-1 h-20 rounded-lg border transition-all duration-200 ${
+                  isActive
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-foreground hover:border-primary/40"
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: 24 }}
                 >
-                  {m.label}
-                </button>
-              );
-            })}
-          </div>
+                  {m.icon}
+                </span>
+                <span className="text-xs font-semibold">{m.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {dialerError && (
@@ -233,22 +192,29 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         )}
 
         {/* DIR Button */}
-        <div className="mt-auto pt-6">
-          <button
-            onClick={handleSubmit}
-            disabled={!amount || parseFloat(amount) <= 0}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl h-14 bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-primary-foreground text-lg font-bold tracking-wide shadow-payment"
-          >
-            <span>DIR</span>
-            <Send className="w-5 h-5" />
-          </button>
-          <div className="flex items-center justify-center pt-4 gap-2 opacity-70">
-            <ShieldCheck className="w-4 h-4 text-muted-foreground" />
-            <p className="text-muted-foreground text-xs font-medium">
-              Ammaan & Degdeg
-            </p>
-          </div>
-        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={!amount || parseFloat(amount) <= 0}
+          className="mt-7 flex w-full items-center justify-center gap-2 rounded-full h-14 bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-primary-foreground text-base font-bold tracking-wide shadow-payment"
+        >
+          <span>DIR</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+            send
+          </span>
+        </button>
+      </div>
+
+      {/* Security badge */}
+      <div className="flex items-center justify-center gap-2 opacity-70">
+        <span
+          className="material-symbols-outlined text-muted-foreground"
+          style={{ fontSize: 16 }}
+        >
+          verified_user
+        </span>
+        <p className="text-muted-foreground text-xs font-medium">
+          Ammaan & Degdeg
+        </p>
       </div>
     </div>
   );
