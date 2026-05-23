@@ -162,19 +162,9 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         </div>
       </div>
 
-      {/* Hero Banner */}
-      <div className="relative mt-4 mx-3 h-44 rounded-2xl overflow-hidden">
-        <img
-          src={bannerImage}
-          alt={merchant.name}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-      </div>
-
       {/* Overlapping Card */}
-      <div className="relative -mt-10 mx-3 bg-card rounded-3xl shadow-card border border-border pt-14 pb-6 px-6 flex-1 flex flex-col">
-        {/* Merchant Logo overlapping top edge */}
+      <div className="relative mt-8 mx-3 bg-card rounded-3xl shadow-card border border-border pt-14 pb-6 px-6 flex-1 flex flex-col">
+        {/* Merchant Logo */}
         <div className="absolute left-1/2 -translate-x-1/2 -top-10 w-20 h-20 rounded-full bg-card border-4 border-card shadow-card overflow-hidden flex items-center justify-center">
           {merchant.logo_url ? (
             <img
