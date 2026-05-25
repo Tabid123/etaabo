@@ -330,6 +330,7 @@ const Admin = () => {
                     />
                     {isUploadingBanner && (
                       <p className="text-xs text-muted-foreground">Uploading...</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="currency">Currency</Label>
