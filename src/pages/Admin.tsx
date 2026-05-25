@@ -138,6 +138,7 @@ const Admin = () => {
           name: formData.name,
           phone_number: formData.phone_number,
           logo_url: formData.logo_url || null,
+          banner_url: formData.banner_url || null,
           ussd_base_code: formData.ussd_base_code,
           currency: formData.currency,
           is_active: formData.is_active,
