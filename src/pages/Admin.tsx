@@ -55,6 +55,7 @@ const Admin = () => {
       name: "",
       phone_number: "",
       logo_url: "",
+      banner_url: "",
       ussd_base_code: "712",
       currency: "USD",
       is_active: true,
