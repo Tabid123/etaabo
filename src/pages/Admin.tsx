@@ -75,11 +75,33 @@ const Admin = () => {
       name: merchant.name,
       phone_number: merchant.phone_number,
       logo_url: merchant.logo_url || "",
+      banner_url: merchant.banner_url || "",
       ussd_base_code: merchant.ussd_base_code,
       currency: merchant.currency,
       is_active: merchant.is_active,
     });
     setIsDialogOpen(true);
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingBanner(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${formData.merchant_id || "tmp"}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("merchant-banners")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("merchant-banners").getPublicUrl(path);
+      setFormData((f) => ({ ...f, banner_url: data.publicUrl }));
+      toast.success("Banner uploaded");
+    } catch (err: any) {
+      toast.error("Upload failed", { description: err.message });
+    } finally {
+      setIsUploadingBanner(false);
+    }
   };
 
   const handleSave = async () => {
