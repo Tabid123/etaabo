@@ -27,11 +27,13 @@ const Admin = () => {
     name: "",
     phone_number: "",
     logo_url: "",
+    banner_url: "",
     ussd_base_code: "712",
     currency: "USD",
     is_active: true,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   // Redirect if not authenticated or not admin
   if (!isLoading && (!user || !isAdmin)) {
@@ -53,6 +55,7 @@ const Admin = () => {
       name: "",
       phone_number: "",
       logo_url: "",
+      banner_url: "",
       ussd_base_code: "712",
       currency: "USD",
       is_active: true,
@@ -72,11 +75,33 @@ const Admin = () => {
       name: merchant.name,
       phone_number: merchant.phone_number,
       logo_url: merchant.logo_url || "",
+      banner_url: merchant.banner_url || "",
       ussd_base_code: merchant.ussd_base_code,
       currency: merchant.currency,
       is_active: merchant.is_active,
     });
     setIsDialogOpen(true);
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingBanner(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${formData.merchant_id || "tmp"}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("merchant-banners")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("merchant-banners").getPublicUrl(path);
+      setFormData((f) => ({ ...f, banner_url: data.publicUrl }));
+      toast.success("Banner uploaded");
+    } catch (err: any) {
+      toast.error("Upload failed", { description: err.message });
+    } finally {
+      setIsUploadingBanner(false);
+    }
   };
 
   const handleSave = async () => {
@@ -97,6 +122,7 @@ const Admin = () => {
             name: formData.name,
             phone_number: formData.phone_number,
             logo_url: formData.logo_url || null,
+            banner_url: formData.banner_url || null,
             ussd_base_code: formData.ussd_base_code,
             currency: formData.currency,
             is_active: formData.is_active,
@@ -112,6 +138,7 @@ const Admin = () => {
           name: formData.name,
           phone_number: formData.phone_number,
           logo_url: formData.logo_url || null,
+          banner_url: formData.banner_url || null,
           ussd_base_code: formData.ussd_base_code,
           currency: formData.currency,
           is_active: formData.is_active,
@@ -276,6 +303,34 @@ const Admin = () => {
                         setFormData({ ...formData, logo_url: e.target.value })
                       }
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="banner_url">Promo Banner (optional)</Label>
+                    {formData.banner_url && (
+                      <img
+                        src={formData.banner_url}
+                        alt="Banner preview"
+                        className="w-full aspect-[16/7] object-cover rounded-lg border border-border"
+                      />
+                    )}
+                    <Input
+                      id="banner_file"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerUpload}
+                      disabled={isUploadingBanner}
+                    />
+                    <Input
+                      id="banner_url"
+                      placeholder="Or paste image URL"
+                      value={formData.banner_url}
+                      onChange={(e) =>
+                        setFormData({ ...formData, banner_url: e.target.value })
+                      }
+                    />
+                    {isUploadingBanner && (
+                      <p className="text-xs text-muted-foreground">Uploading...</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="currency">Currency</Label>

@@ -100,23 +100,32 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
   return (
     <div className="w-full max-w-[480px] mx-auto flex flex-col min-h-screen px-5 pt-5 pb-6 gap-5">
       {/* Promo Banner */}
-      <div
-        className="relative rounded-xl overflow-hidden p-5 text-white"
-        style={{ background: "var(--gradient-promo)" }}
-      >
-        <h2 className="text-2xl font-extrabold leading-tight">
-          Mobile<br />Payment
-        </h2>
-        <p className="text-sm font-medium mt-1 opacity-90">
-          Buy our system payment App...
-        </p>
-        <span className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/25 backdrop-blur-sm" />
-      </div>
+      {merchant.banner_url ? (
+        <div className="relative rounded-2xl overflow-hidden shadow-payment aspect-[16/7] bg-secondary">
+          <img
+            src={merchant.banner_url}
+            alt={`${merchant.name} banner`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div
+          className="relative rounded-2xl overflow-hidden p-5 text-white shadow-payment"
+          style={{ background: "var(--gradient-promo)" }}
+        >
+          <h2 className="text-2xl font-extrabold leading-tight">
+            Mobile<br />Payment
+          </h2>
+          <p className="text-sm font-medium mt-1 opacity-90">
+            Buy our system payment App...
+          </p>
+        </div>
+      )}
 
       {/* Payment Card */}
-      <div className="bg-card rounded-xl shadow-card border border-border/60 px-6 pt-7 pb-6 flex flex-col">
+      <div className="bg-card rounded-2xl shadow-payment px-6 pt-7 pb-6 flex flex-col">
         {/* Merchant Logo */}
-        <div className="mx-auto w-16 h-16 rounded-full bg-secondary border border-border/60 overflow-hidden flex items-center justify-center">
+        <div className="mx-auto w-16 h-16 rounded-full bg-secondary overflow-hidden flex items-center justify-center shadow-payment">
           {merchant.logo_url ? (
             <img
               src={merchant.logo_url}

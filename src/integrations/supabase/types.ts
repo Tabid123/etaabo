@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       merchants: {
         Row: {
+          banner_url: string | null
           created_at: string
           currency: string
           id: string
@@ -28,6 +29,7 @@ export type Database = {
           ussd_base_code: string
         }
         Insert: {
+          banner_url?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -40,6 +42,7 @@ export type Database = {
           ussd_base_code?: string
         }
         Update: {
+          banner_url?: string | null
           created_at?: string
           currency?: string
           id?: string
