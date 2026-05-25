@@ -305,6 +305,33 @@ const Admin = () => {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="banner_url">Promo Banner (optional)</Label>
+                    {formData.banner_url && (
+                      <img
+                        src={formData.banner_url}
+                        alt="Banner preview"
+                        className="w-full aspect-[16/7] object-cover rounded-lg border border-border"
+                      />
+                    )}
+                    <Input
+                      id="banner_file"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerUpload}
+                      disabled={isUploadingBanner}
+                    />
+                    <Input
+                      id="banner_url"
+                      placeholder="Or paste image URL"
+                      value={formData.banner_url}
+                      onChange={(e) =>
+                        setFormData({ ...formData, banner_url: e.target.value })
+                      }
+                    />
+                    {isUploadingBanner && (
+                      <p className="text-xs text-muted-foreground">Uploading...</p>
+                    )}
+                  <div className="space-y-2">
                     <Label htmlFor="currency">Currency</Label>
                     <Input
                       id="currency"
