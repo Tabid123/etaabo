@@ -7,6 +7,7 @@ export interface Merchant {
   name: string;
   phone_number: string;
   logo_url: string | null;
+  banner_url: string | null;
   ussd_base_code: string;
   currency: string;
   is_active: boolean;
