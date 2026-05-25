@@ -14,11 +14,10 @@ type PaymentMethod = "evc" | "edahab" | "premier";
 const PAYMENT_METHODS: {
   id: PaymentMethod;
   label: string;
-  icon: string;
 }[] = [
-  { id: "evc", label: "EVC Plus", icon: "account_balance_wallet" },
-  { id: "edahab", label: "eDahab", icon: "payments" },
-  { id: "premier", label: "Premier", icon: "account_balance" },
+  { id: "evc", label: "EVC Plus" },
+  { id: "edahab", label: "eDahab" },
+  { id: "premier", label: "Premier" },
 ];
 
 const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCardProps) => {
@@ -146,7 +145,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
             value={amount}
             onChange={handleAmountChange}
             autoFocus
-            className="w-[60%] text-center text-5xl font-extrabold text-foreground bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-foreground/80 tracking-tight"
+            className="w-auto max-w-[60%] text-center text-5xl font-extrabold text-foreground bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-foreground/30 placeholder:font-light tracking-tight"
           />
           <span className="text-base font-bold text-muted-foreground uppercase">
             {merchant.currency}
@@ -167,19 +166,13 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
               <button
                 key={m.id}
                 onClick={() => setMethod(m.id)}
-                className={`flex flex-col items-center justify-center gap-1 h-20 rounded-lg border transition-all duration-200 ${
+                className={`flex items-center justify-center h-14 rounded-lg border transition-all duration-200 ${
                   isActive
                     ? "border-primary bg-primary/5 text-primary shadow-sm"
                     : "border-border bg-card text-foreground hover:border-primary/40"
                 }`}
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: 24 }}
-                >
-                  {m.icon}
-                </span>
-                <span className="text-xs font-semibold">{m.label}</span>
+                <span className="text-sm font-semibold">{m.label}</span>
               </button>
             );
           })}
@@ -195,23 +188,14 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         <button
           onClick={handleSubmit}
           disabled={!amount || parseFloat(amount) <= 0}
-          className="mt-7 flex w-full items-center justify-center gap-2 rounded-full h-14 bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-primary-foreground text-base font-bold tracking-wide shadow-payment"
+          className="mt-7 flex w-full items-center justify-center rounded-full h-14 bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-primary-foreground text-base font-bold tracking-wide shadow-payment"
         >
-          <span>DIR</span>
-          <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
-            send
-          </span>
+          DIR
         </button>
       </div>
 
       {/* Security badge */}
-      <div className="flex items-center justify-center gap-2 opacity-70">
-        <span
-          className="material-symbols-outlined text-muted-foreground"
-          style={{ fontSize: 16 }}
-        >
-          verified_user
-        </span>
+      <div className="flex items-center justify-center opacity-70">
         <p className="text-muted-foreground text-xs font-medium">
           Ammaan & Degdeg
         </p>
