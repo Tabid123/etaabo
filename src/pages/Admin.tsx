@@ -27,11 +27,13 @@ const Admin = () => {
     name: "",
     phone_number: "",
     logo_url: "",
+    banner_url: "",
     ussd_base_code: "712",
     currency: "USD",
     is_active: true,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   // Redirect if not authenticated or not admin
   if (!isLoading && (!user || !isAdmin)) {
