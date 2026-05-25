@@ -14,11 +14,10 @@ type PaymentMethod = "evc" | "edahab" | "premier";
 const PAYMENT_METHODS: {
   id: PaymentMethod;
   label: string;
-  icon: string;
 }[] = [
-  { id: "evc", label: "EVC Plus", icon: "account_balance_wallet" },
-  { id: "edahab", label: "eDahab", icon: "payments" },
-  { id: "premier", label: "Premier", icon: "account_balance" },
+  { id: "evc", label: "EVC Plus" },
+  { id: "edahab", label: "eDahab" },
+  { id: "premier", label: "Premier" },
 ];
 
 const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCardProps) => {
