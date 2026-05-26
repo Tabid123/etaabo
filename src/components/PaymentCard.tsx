@@ -125,7 +125,10 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
       {/* Payment Card */}
       <div className="bg-card rounded-2xl shadow-payment px-6 pt-7 pb-6 flex flex-col">
         {/* Merchant Logo */}
-        <div className="mx-auto w-16 h-16 rounded-full bg-secondary overflow-hidden flex items-center justify-center shadow-payment">
+        <div
+          className="mx-auto w-16 h-16 rounded-full bg-secondary overflow-hidden flex items-center justify-center ring-4 ring-card"
+          style={{ boxShadow: "0 12px 40px -8px hsl(219 100% 39% / 0.45), 0 4px 12px -2px hsl(219 100% 39% / 0.25)" }}
+        >
           {merchant.logo_url ? (
             <img
               src={merchant.logo_url}
