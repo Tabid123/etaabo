@@ -368,12 +368,17 @@ const Admin = () => {
                   <Button
                     className="w-full"
                     onClick={handleSave}
-                    disabled={isSaving}
+                    disabled={isSaving || isUploadingBanner}
                   >
                     {isSaving ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Saving...
+                      </>
+                    ) : isUploadingBanner ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Uploading banner...
                       </>
                     ) : editingMerchant ? (
                       "Update Merchant"
