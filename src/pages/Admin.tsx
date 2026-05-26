@@ -86,23 +86,34 @@ const Admin = () => {
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large", { description: "Max 5MB" });
+      return;
+    }
     setIsUploadingBanner(true);
     try {
-      const ext = file.name.split(".").pop();
-      const path = `${formData.merchant_id || "tmp"}-${Date.now()}.${ext}`;
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const safeId = (formData.merchant_id || "tmp").replace(/[^a-zA-Z0-9_-]/g, "");
+      const path = `${safeId}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("merchant-banners")
-        .upload(path, file, { upsert: true });
+        .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
       const { data } = supabase.storage.from("merchant-banners").getPublicUrl(path);
       setFormData((f) => ({ ...f, banner_url: data.publicUrl }));
-      toast.success("Banner uploaded");
+      toast.success("Banner uploaded", {
+        description: "Click Update Merchant to save",
+      });
     } catch (err: any) {
-      toast.error("Upload failed", { description: err.message });
+      console.error("Banner upload error:", err);
+      toast.error("Upload failed", { description: err.message || "Unknown error" });
     } finally {
       setIsUploadingBanner(false);
+      // reset input so same file can be re-selected
+      e.target.value = "";
     }
   };
+
 
   const handleSave = async () => {
     if (!formData.merchant_id || !formData.name || !formData.phone_number) {
@@ -357,12 +368,17 @@ const Admin = () => {
                   <Button
                     className="w-full"
                     onClick={handleSave}
-                    disabled={isSaving}
+                    disabled={isSaving || isUploadingBanner}
                   >
                     {isSaving ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Saving...
+                      </>
+                    ) : isUploadingBanner ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Uploading banner...
                       </>
                     ) : editingMerchant ? (
                       "Update Merchant"
