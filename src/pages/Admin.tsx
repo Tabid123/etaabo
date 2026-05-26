@@ -227,7 +227,7 @@ const Admin = () => {
                   Add Merchant
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {editingMerchant ? "Edit Merchant" : "Add New Merchant"}
