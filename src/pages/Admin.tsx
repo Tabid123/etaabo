@@ -390,105 +390,205 @@ const Admin = () => {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Merchant</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>USSD Code</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {merchants.map((merchant) => (
-                      <TableRow key={merchant.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-                              {merchant.logo_url ? (
-                                <img
-                                  src={merchant.logo_url}
-                                  alt={merchant.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <Store className="w-5 h-5 text-primary" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">
+              <>
+                {/* Mobile: card list */}
+                <div className="md:hidden space-y-3">
+                  {merchants.map((merchant) => (
+                    <div
+                      key={merchant.id}
+                      className="rounded-xl border border-border bg-card p-4 shadow-sm"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
+                          {merchant.logo_url ? (
+                            <img
+                              src={merchant.logo_url}
+                              alt={merchant.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Store className="w-5 h-5 text-primary" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground truncate">
                                 {merchant.name}
                               </p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-muted-foreground truncate">
                                 {merchant.merchant_id}
                               </p>
                             </div>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${
+                                merchant.is_active
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {merchant.is_active ? "Active" : "Inactive"}
+                            </span>
                           </div>
-                        </TableCell>
-                        <TableCell className="font-mono">
-                          {merchant.phone_number}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {merchant.ussd_base_code}
-                          {merchant.phone_number}*AMT#
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              merchant.is_active
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {merchant.is_active ? "Active" : "Inactive"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => copyPaymentLink(merchant.merchant_id)}
-                              title="Copy payment link"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                window.open(
-                                  `/pay?merchant=${merchant.merchant_id}`,
-                                  "_blank"
-                                )
-                              }
-                              title="Preview payment page"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openEditDialog(merchant)}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(merchant)}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
+                          <div className="mt-2 space-y-1 text-xs">
+                            <div className="flex justify-between gap-2">
+                              <span className="text-muted-foreground">Phone</span>
+                              <span className="font-mono text-foreground">
+                                {merchant.phone_number}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                              <span className="text-muted-foreground">USSD</span>
+                              <span className="font-mono text-foreground truncate">
+                                *{merchant.ussd_base_code}
+                                {merchant.phone_number}*AMT#
+                              </span>
+                            </div>
                           </div>
-                        </TableCell>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-end gap-1 border-t border-border pt-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyPaymentLink(merchant.merchant_id)}
+                          title="Copy payment link"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            window.open(
+                              `/pay?merchant=${merchant.merchant_id}`,
+                              "_blank"
+                            )
+                          }
+                          title="Preview"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(merchant)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(merchant)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Merchant</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>USSD Code</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {merchants.map((merchant) => (
+                        <TableRow key={merchant.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
+                                {merchant.logo_url ? (
+                                  <img
+                                    src={merchant.logo_url}
+                                    alt={merchant.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <Store className="w-5 h-5 text-primary" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-foreground">
+                                  {merchant.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {merchant.merchant_id}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono">
+                            {merchant.phone_number}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {merchant.ussd_base_code}
+                            {merchant.phone_number}*AMT#
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                merchant.is_active
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {merchant.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyPaymentLink(merchant.merchant_id)}
+                                title="Copy payment link"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  window.open(
+                                    `/pay?merchant=${merchant.merchant_id}`,
+                                    "_blank"
+                                  )
+                                }
+                                title="Preview payment page"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditDialog(merchant)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(merchant)}
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
