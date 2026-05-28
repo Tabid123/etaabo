@@ -176,17 +176,34 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         <div className="mt-3 grid grid-cols-3 gap-2.5">
           {PAYMENT_METHODS.map((m) => {
             const isActive = method === m.id;
+            const logoUrl =
+              m.id === "evc"
+                ? merchant.evc_logo_url
+                : m.id === "edahab"
+                ? merchant.edahab_logo_url
+                : merchant.premier_logo_url;
             return (
               <button
                 key={m.id}
                 onClick={() => setMethod(m.id)}
-                className={`flex items-center justify-center h-14 rounded-lg border transition-all duration-200 ${
+                className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg border transition-all duration-200 px-2 ${
                   isActive
                     ? "border-primary bg-primary/5 text-primary shadow-sm"
                     : "border-border bg-card text-foreground hover:border-primary/40"
                 }`}
               >
-                <span className="text-sm font-semibold">{m.label}</span>
+                {logoUrl ? (
+                  <>
+                    <img
+                      src={logoUrl}
+                      alt={m.label}
+                      className="h-7 w-auto object-contain"
+                    />
+                    <span className="text-[10px] font-semibold leading-none">{m.label}</span>
+                  </>
+                ) : (
+                  <span className="text-sm font-semibold">{m.label}</span>
+                )}
               </button>
             );
           })}
