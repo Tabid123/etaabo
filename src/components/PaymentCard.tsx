@@ -159,13 +159,8 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
             autoFocus
             className="w-auto max-w-[60%] text-center text-5xl text-foreground bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-foreground/30 tracking-tight font-semibold"
           />
-          <span className="text-base font-bold text-muted-foreground uppercase">
-            &#8203;
-          </span>
         </div>
-        <p className="mt-2 text-center text-sm text-muted-foreground">
-          &#8203;
-        </p>
+
 
         {/* Methods */}
         <p className="mt-7 text-center text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
