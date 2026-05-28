@@ -28,12 +28,16 @@ const Admin = () => {
     phone_number: "",
     logo_url: "",
     banner_url: "",
+    evc_logo_url: "",
+    edahab_logo_url: "",
+    premier_logo_url: "",
     ussd_base_code: "712",
     currency: "USD",
     is_active: true,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
 
   // Redirect if not authenticated or not admin
   if (!isLoading && (!user || !isAdmin)) {
