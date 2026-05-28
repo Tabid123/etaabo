@@ -157,14 +157,14 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
             value={amount}
             onChange={handleAmountChange}
             autoFocus
-            className="w-auto max-w-[60%] text-center text-5xl font-extrabold text-foreground bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-foreground/30 placeholder:font-light tracking-tight"
+            className="w-auto max-w-[60%] text-center text-5xl text-foreground bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-foreground/30 tracking-tight font-semibold"
           />
           <span className="text-base font-bold text-muted-foreground uppercase">
-            {merchant.currency}
+            &#8203;
           </span>
         </div>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          Lacagta lagu bixinayo {merchant.currency}
+          &#8203;
         </p>
 
         {/* Methods */}
