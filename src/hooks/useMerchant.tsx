@@ -8,6 +8,9 @@ export interface Merchant {
   phone_number: string;
   logo_url: string | null;
   banner_url: string | null;
+  evc_logo_url: string | null;
+  edahab_logo_url: string | null;
+  premier_logo_url: string | null;
   ussd_base_code: string;
   currency: string;
   is_active: boolean;
