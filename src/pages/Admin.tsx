@@ -124,6 +124,37 @@ const Admin = () => {
     }
   };
 
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "logo_url" | "evc_logo_url" | "edahab_logo_url" | "premier_logo_url"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large", { description: "Max 5MB" });
+      return;
+    }
+    setUploadingField(field);
+    try {
+      const ext = (file.name.split(".").pop() || "png").toLowerCase();
+      const safeId = (formData.merchant_id || "tmp").replace(/[^a-zA-Z0-9_-]/g, "");
+      const path = `${safeId}-${field}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("merchant-banners")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("merchant-banners").getPublicUrl(path);
+      setFormData((f) => ({ ...f, [field]: data.publicUrl }));
+      toast.success("Image uploaded", { description: "Click Save to persist" });
+    } catch (err: any) {
+      console.error("Image upload error:", err);
+      toast.error("Upload failed", { description: err.message || "Unknown error" });
+    } finally {
+      setUploadingField(null);
+      e.target.value = "";
+    }
+  };
+
 
   const handleSave = async () => {
     if (!formData.merchant_id || !formData.name || !formData.phone_number) {
@@ -134,37 +165,28 @@ const Admin = () => {
     setIsSaving(true);
 
     try {
+      const payload = {
+        merchant_id: formData.merchant_id,
+        name: formData.name,
+        phone_number: formData.phone_number,
+        logo_url: formData.logo_url || null,
+        banner_url: formData.banner_url || null,
+        evc_logo_url: formData.evc_logo_url || null,
+        edahab_logo_url: formData.edahab_logo_url || null,
+        premier_logo_url: formData.premier_logo_url || null,
+        ussd_base_code: formData.ussd_base_code,
+        currency: formData.currency,
+        is_active: formData.is_active,
+      };
       if (editingMerchant) {
-        // Update existing merchant
         const { error } = await supabase
           .from("merchants")
-          .update({
-            merchant_id: formData.merchant_id,
-            name: formData.name,
-            phone_number: formData.phone_number,
-            logo_url: formData.logo_url || null,
-            banner_url: formData.banner_url || null,
-            ussd_base_code: formData.ussd_base_code,
-            currency: formData.currency,
-            is_active: formData.is_active,
-          })
+          .update(payload)
           .eq("id", editingMerchant.id);
-
         if (error) throw error;
         toast.success("Merchant updated successfully");
       } else {
-        // Create new merchant
-        const { error } = await supabase.from("merchants").insert({
-          merchant_id: formData.merchant_id,
-          name: formData.name,
-          phone_number: formData.phone_number,
-          logo_url: formData.logo_url || null,
-          banner_url: formData.banner_url || null,
-          ussd_base_code: formData.ussd_base_code,
-          currency: formData.currency,
-          is_active: formData.is_active,
-        });
-
+        const { error } = await supabase.from("merchants").insert(payload);
         if (error) throw error;
         toast.success("Merchant created successfully");
       }
