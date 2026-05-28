@@ -337,16 +337,70 @@ const Admin = () => {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="logo_url">Logo URL (optional)</Label>
+                    <Label htmlFor="logo_url">Merchant Logo (optional)</Label>
+                    {formData.logo_url && (
+                      <img
+                        src={formData.logo_url}
+                        alt="Logo preview"
+                        className="w-20 h-20 object-cover rounded-full border border-border"
+                      />
+                    )}
+                    <Input
+                      id="logo_file"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, "logo_url")}
+                      disabled={uploadingField === "logo_url"}
+                    />
                     <Input
                       id="logo_url"
-                      placeholder="https://example.com/logo.png"
+                      placeholder="Or paste image URL"
                       value={formData.logo_url}
                       onChange={(e) =>
                         setFormData({ ...formData, logo_url: e.target.value })
                       }
                     />
+                    {uploadingField === "logo_url" && (
+                      <p className="text-xs text-muted-foreground">Uploading...</p>
+                    )}
                   </div>
+                  {(["evc", "edahab", "premier"] as const).map((m) => {
+                    const field = `${m}_logo_url` as
+                      | "evc_logo_url"
+                      | "edahab_logo_url"
+                      | "premier_logo_url";
+                    const label =
+                      m === "evc" ? "EVC Plus" : m === "edahab" ? "eDahab" : "Premier";
+                    return (
+                      <div key={m} className="space-y-2">
+                        <Label htmlFor={`${field}_file`}>{label} Logo (optional)</Label>
+                        {formData[field] && (
+                          <img
+                            src={formData[field]}
+                            alt={`${label} preview`}
+                            className="w-16 h-16 object-contain rounded-lg border border-border bg-white p-1"
+                          />
+                        )}
+                        <Input
+                          id={`${field}_file`}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, field)}
+                          disabled={uploadingField === field}
+                        />
+                        <Input
+                          placeholder="Or paste image URL"
+                          value={formData[field]}
+                          onChange={(e) =>
+                            setFormData({ ...formData, [field]: e.target.value })
+                          }
+                        />
+                        {uploadingField === field && (
+                          <p className="text-xs text-muted-foreground">Uploading...</p>
+                        )}
+                      </div>
+                    );
+                  })}
                   <div className="space-y-2">
                     <Label htmlFor="banner_url">Promo Banner (optional)</Label>
                     {formData.banner_url && (
