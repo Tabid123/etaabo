@@ -19,12 +19,15 @@ export type Database = {
           banner_url: string | null
           created_at: string
           currency: string
+          edahab_logo_url: string | null
+          evc_logo_url: string | null
           id: string
           is_active: boolean
           logo_url: string | null
           merchant_id: string
           name: string
           phone_number: string
+          premier_logo_url: string | null
           updated_at: string
           ussd_base_code: string
         }
@@ -32,12 +35,15 @@ export type Database = {
           banner_url?: string | null
           created_at?: string
           currency?: string
+          edahab_logo_url?: string | null
+          evc_logo_url?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
           merchant_id: string
           name: string
           phone_number: string
+          premier_logo_url?: string | null
           updated_at?: string
           ussd_base_code?: string
         }
@@ -45,12 +51,15 @@ export type Database = {
           banner_url?: string | null
           created_at?: string
           currency?: string
+          edahab_logo_url?: string | null
+          evc_logo_url?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
           merchant_id?: string
           name?: string
           phone_number?: string
+          premier_logo_url?: string | null
           updated_at?: string
           ussd_base_code?: string
         }
