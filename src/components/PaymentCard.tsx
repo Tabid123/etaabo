@@ -124,20 +124,27 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
 
       {/* Payment Card */}
       <div className="bg-card rounded-2xl shadow-payment px-6 pt-7 pb-6 flex flex-col">
-        {/* Merchant Logo */}
-        <div
-          className="mx-auto w-16 h-16 rounded-full bg-secondary overflow-hidden flex items-center justify-center ring-4 ring-card"
-          style={{ boxShadow: "0 12px 40px -8px hsl(219 100% 39% / 0.45), 0 4px 12px -2px hsl(219 100% 39% / 0.25)" }}
-        >
-          {merchant.logo_url ? (
-            <img
-              src={merchant.logo_url}
-              alt={merchant.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Store className="w-8 h-8 text-primary" />
-          )}
+        {/* Merchant Logo - fancy circle */}
+        <div className="mx-auto relative">
+          <div
+            className="p-[3px] rounded-full"
+            style={{ background: "linear-gradient(135deg, hsl(219 100% 39%), hsl(219 100% 60%))" }}
+          >
+            <div
+              className="w-20 h-20 rounded-full bg-card overflow-hidden flex items-center justify-center ring-4 ring-card"
+              style={{ boxShadow: "0 14px 40px -10px hsl(219 100% 39% / 0.55), 0 4px 14px -2px hsl(219 100% 39% / 0.25)" }}
+            >
+              {merchant.logo_url ? (
+                <img
+                  src={merchant.logo_url}
+                  alt={merchant.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Store className="w-9 h-9 text-primary" />
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Name */}
