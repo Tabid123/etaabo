@@ -28,12 +28,16 @@ const Admin = () => {
     phone_number: "",
     logo_url: "",
     banner_url: "",
+    evc_logo_url: "",
+    edahab_logo_url: "",
+    premier_logo_url: "",
     ussd_base_code: "712",
     currency: "USD",
     is_active: true,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
 
   // Redirect if not authenticated or not admin
   if (!isLoading && (!user || !isAdmin)) {
@@ -56,6 +60,9 @@ const Admin = () => {
       phone_number: "",
       logo_url: "",
       banner_url: "",
+      evc_logo_url: "",
+      edahab_logo_url: "",
+      premier_logo_url: "",
       ussd_base_code: "712",
       currency: "USD",
       is_active: true,
@@ -76,6 +83,9 @@ const Admin = () => {
       phone_number: merchant.phone_number,
       logo_url: merchant.logo_url || "",
       banner_url: merchant.banner_url || "",
+      evc_logo_url: merchant.evc_logo_url || "",
+      edahab_logo_url: merchant.edahab_logo_url || "",
+      premier_logo_url: merchant.premier_logo_url || "",
       ussd_base_code: merchant.ussd_base_code,
       currency: merchant.currency,
       is_active: merchant.is_active,
@@ -114,6 +124,37 @@ const Admin = () => {
     }
   };
 
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "logo_url" | "evc_logo_url" | "edahab_logo_url" | "premier_logo_url"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large", { description: "Max 5MB" });
+      return;
+    }
+    setUploadingField(field);
+    try {
+      const ext = (file.name.split(".").pop() || "png").toLowerCase();
+      const safeId = (formData.merchant_id || "tmp").replace(/[^a-zA-Z0-9_-]/g, "");
+      const path = `${safeId}-${field}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("merchant-banners")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("merchant-banners").getPublicUrl(path);
+      setFormData((f) => ({ ...f, [field]: data.publicUrl }));
+      toast.success("Image uploaded", { description: "Click Save to persist" });
+    } catch (err: any) {
+      console.error("Image upload error:", err);
+      toast.error("Upload failed", { description: err.message || "Unknown error" });
+    } finally {
+      setUploadingField(null);
+      e.target.value = "";
+    }
+  };
+
 
   const handleSave = async () => {
     if (!formData.merchant_id || !formData.name || !formData.phone_number) {
@@ -124,37 +165,28 @@ const Admin = () => {
     setIsSaving(true);
 
     try {
+      const payload = {
+        merchant_id: formData.merchant_id,
+        name: formData.name,
+        phone_number: formData.phone_number,
+        logo_url: formData.logo_url || null,
+        banner_url: formData.banner_url || null,
+        evc_logo_url: formData.evc_logo_url || null,
+        edahab_logo_url: formData.edahab_logo_url || null,
+        premier_logo_url: formData.premier_logo_url || null,
+        ussd_base_code: formData.ussd_base_code,
+        currency: formData.currency,
+        is_active: formData.is_active,
+      };
       if (editingMerchant) {
-        // Update existing merchant
         const { error } = await supabase
           .from("merchants")
-          .update({
-            merchant_id: formData.merchant_id,
-            name: formData.name,
-            phone_number: formData.phone_number,
-            logo_url: formData.logo_url || null,
-            banner_url: formData.banner_url || null,
-            ussd_base_code: formData.ussd_base_code,
-            currency: formData.currency,
-            is_active: formData.is_active,
-          })
+          .update(payload)
           .eq("id", editingMerchant.id);
-
         if (error) throw error;
         toast.success("Merchant updated successfully");
       } else {
-        // Create new merchant
-        const { error } = await supabase.from("merchants").insert({
-          merchant_id: formData.merchant_id,
-          name: formData.name,
-          phone_number: formData.phone_number,
-          logo_url: formData.logo_url || null,
-          banner_url: formData.banner_url || null,
-          ussd_base_code: formData.ussd_base_code,
-          currency: formData.currency,
-          is_active: formData.is_active,
-        });
-
+        const { error } = await supabase.from("merchants").insert(payload);
         if (error) throw error;
         toast.success("Merchant created successfully");
       }
@@ -305,16 +337,70 @@ const Admin = () => {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="logo_url">Logo URL (optional)</Label>
+                    <Label htmlFor="logo_url">Merchant Logo (optional)</Label>
+                    {formData.logo_url && (
+                      <img
+                        src={formData.logo_url}
+                        alt="Logo preview"
+                        className="w-20 h-20 object-cover rounded-full border border-border"
+                      />
+                    )}
+                    <Input
+                      id="logo_file"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, "logo_url")}
+                      disabled={uploadingField === "logo_url"}
+                    />
                     <Input
                       id="logo_url"
-                      placeholder="https://example.com/logo.png"
+                      placeholder="Or paste image URL"
                       value={formData.logo_url}
                       onChange={(e) =>
                         setFormData({ ...formData, logo_url: e.target.value })
                       }
                     />
+                    {uploadingField === "logo_url" && (
+                      <p className="text-xs text-muted-foreground">Uploading...</p>
+                    )}
                   </div>
+                  {(["evc", "edahab", "premier"] as const).map((m) => {
+                    const field = `${m}_logo_url` as
+                      | "evc_logo_url"
+                      | "edahab_logo_url"
+                      | "premier_logo_url";
+                    const label =
+                      m === "evc" ? "EVC Plus" : m === "edahab" ? "eDahab" : "Premier";
+                    return (
+                      <div key={m} className="space-y-2">
+                        <Label htmlFor={`${field}_file`}>{label} Logo (optional)</Label>
+                        {formData[field] && (
+                          <img
+                            src={formData[field]}
+                            alt={`${label} preview`}
+                            className="w-16 h-16 object-contain rounded-lg border border-border bg-white p-1"
+                          />
+                        )}
+                        <Input
+                          id={`${field}_file`}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, field)}
+                          disabled={uploadingField === field}
+                        />
+                        <Input
+                          placeholder="Or paste image URL"
+                          value={formData[field]}
+                          onChange={(e) =>
+                            setFormData({ ...formData, [field]: e.target.value })
+                          }
+                        />
+                        {uploadingField === field && (
+                          <p className="text-xs text-muted-foreground">Uploading...</p>
+                        )}
+                      </div>
+                    );
+                  })}
                   <div className="space-y-2">
                     <Label htmlFor="banner_url">Promo Banner (optional)</Label>
                     {formData.banner_url && (

@@ -124,20 +124,27 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
 
       {/* Payment Card */}
       <div className="bg-card rounded-2xl shadow-payment px-6 pt-7 pb-6 flex flex-col">
-        {/* Merchant Logo */}
-        <div
-          className="mx-auto w-16 h-16 rounded-full bg-secondary overflow-hidden flex items-center justify-center ring-4 ring-card"
-          style={{ boxShadow: "0 12px 40px -8px hsl(219 100% 39% / 0.45), 0 4px 12px -2px hsl(219 100% 39% / 0.25)" }}
-        >
-          {merchant.logo_url ? (
-            <img
-              src={merchant.logo_url}
-              alt={merchant.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Store className="w-8 h-8 text-primary" />
-          )}
+        {/* Merchant Logo - fancy circle */}
+        <div className="mx-auto relative">
+          <div
+            className="p-[3px] rounded-full"
+            style={{ background: "linear-gradient(135deg, hsl(219 100% 39%), hsl(219 100% 60%))" }}
+          >
+            <div
+              className="w-20 h-20 rounded-full bg-card overflow-hidden flex items-center justify-center ring-4 ring-card"
+              style={{ boxShadow: "0 14px 40px -10px hsl(219 100% 39% / 0.55), 0 4px 14px -2px hsl(219 100% 39% / 0.25)" }}
+            >
+              {merchant.logo_url ? (
+                <img
+                  src={merchant.logo_url}
+                  alt={merchant.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Store className="w-9 h-9 text-primary" />
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Name */}
@@ -169,17 +176,34 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         <div className="mt-3 grid grid-cols-3 gap-2.5">
           {PAYMENT_METHODS.map((m) => {
             const isActive = method === m.id;
+            const logoUrl =
+              m.id === "evc"
+                ? merchant.evc_logo_url
+                : m.id === "edahab"
+                ? merchant.edahab_logo_url
+                : merchant.premier_logo_url;
             return (
               <button
                 key={m.id}
                 onClick={() => setMethod(m.id)}
-                className={`flex items-center justify-center h-14 rounded-lg border transition-all duration-200 ${
+                className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg border transition-all duration-200 px-2 ${
                   isActive
                     ? "border-primary bg-primary/5 text-primary shadow-sm"
                     : "border-border bg-card text-foreground hover:border-primary/40"
                 }`}
               >
-                <span className="text-sm font-semibold">{m.label}</span>
+                {logoUrl ? (
+                  <>
+                    <img
+                      src={logoUrl}
+                      alt={m.label}
+                      className="h-7 w-auto object-contain"
+                    />
+                    <span className="text-[10px] font-semibold leading-none">{m.label}</span>
+                  </>
+                ) : (
+                  <span className="text-sm font-semibold">{m.label}</span>
+                )}
               </button>
             );
           })}
