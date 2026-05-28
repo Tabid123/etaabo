@@ -123,7 +123,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
       )}
 
       {/* Payment Card */}
-      <div className="bg-card rounded-2xl shadow-payment px-6 pt-7 pb-6 flex flex-col">
+      <div className="bg-card rounded-2xl shadow-payment px-7 pt-10 pb-9 flex flex-col">
         {/* Merchant Logo - fancy circle */}
         <div className="mx-auto relative">
           <div
@@ -148,15 +148,15 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         </div>
 
         {/* Name */}
-        <h1 className="mt-3 text-center text-2xl font-bold text-foreground tracking-tight">
+        <h1 className="mt-5 text-center text-2xl font-bold text-foreground tracking-tight">
           {merchant.name}
         </h1>
-        <p className="text-center text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase mt-1">
+        <p className="text-center text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase mt-2">
           Payment
         </p>
 
         {/* Amount */}
-        <div className="mt-6 flex items-baseline justify-center gap-2">
+        <div className="mt-10 flex items-baseline justify-center gap-2">
           <input
             type="number"
             inputMode="decimal"
@@ -170,10 +170,10 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
 
 
         {/* Methods */}
-        <p className="mt-7 text-center text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+        <p className="mt-12 text-center text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
           Select Payment Method
         </p>
-        <div className="mt-3 grid grid-cols-3 gap-2.5">
+        <div className="mt-5 grid grid-cols-3 gap-3">
           {PAYMENT_METHODS.map((m) => {
             const isActive = method === m.id;
             const logoUrl =
@@ -186,7 +186,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
               <button
                 key={m.id}
                 onClick={() => setMethod(m.id)}
-                className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg border transition-all duration-200 px-2 ${
+                className={`flex flex-col items-center justify-center gap-1.5 h-[72px] rounded-xl border transition-all duration-200 px-2 ${
                   isActive
                     ? "border-primary bg-primary/5 text-primary shadow-sm"
                     : "border-border bg-card text-foreground hover:border-primary/40"
@@ -210,7 +210,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         </div>
 
         {dialerError && (
-          <p className="mt-4 text-destructive text-sm text-center">
+          <p className="mt-5 text-destructive text-sm text-center">
             {dialerError}
           </p>
         )}
@@ -219,11 +219,12 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         <button
           onClick={handleSubmit}
           disabled={!amount || parseFloat(amount) <= 0}
-          className="mt-7 flex w-full items-center justify-center rounded-full h-14 bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-primary-foreground text-base font-bold tracking-wide shadow-payment"
+          className="mt-10 flex w-full items-center justify-center rounded-full h-14 bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-primary-foreground text-base font-bold tracking-wide shadow-payment"
         >
           DIR
         </button>
       </div>
+
 
       {/* Security badge */}
       <div className="flex items-center justify-center opacity-70">
