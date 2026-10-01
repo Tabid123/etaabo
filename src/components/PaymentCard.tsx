@@ -26,6 +26,7 @@ const PAYMENT_METHODS: {
 const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCardProps) => {
   const [amount, setAmount] = useState("");
   const [dialerError, setDialerError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("evc");
   const [paymentStep, setPaymentStep] = useState<"entry" | "waiting" | "rating" | "done">("entry");
   const [rating, setRating] = useState(0);
@@ -103,11 +104,25 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
       setDialerError("Ganacsade lama helin");
       return;
     }
+    setDialerError(null);
+    setConfirmOpen(true);
+  };
+
+  const confirmPayment = () => {
     const ussdCode = generateUssdCode();
     if (!ussdCode) return;
+    setConfirmOpen(false);
     setPaymentStep("waiting");
     window.location.href = `tel:${ussdCode}`;
   };
+
+  const methodLabel = PAYMENT_METHODS.find((m) => m.id === method)?.label ?? "";
+  const methodLogo =
+    method === "evc"
+      ? merchant?.evc_logo_url
+      : method === "edahab"
+      ? merchant?.edahab_logo_url
+      : merchant?.premier_logo_url;
 
   if (isLoading) {
     return (
