@@ -1,2 +1,0 @@
-- Store customer ratings in `public.merchant_feedback` with anonymous insert and admin-only read, because payment customers do not log in but feedback should not be publicly exposed.
-- Treat the USSD dialer handoff as unverified; present rating and the confirmation tone only after the customer explicitly says they completed payment, because browsers receive no trustworthy USSD result.

@@ -1,9 +1,6 @@
 import { useState } from "react";
-import { Store, AlertCircle, Star, CheckCircle2 } from "lucide-react";
+import { Store, AlertCircle } from "lucide-react";
 import type { Merchant } from "@/hooks/useMerchant";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface PaymentCardProps {
   merchant: Merchant | null;
@@ -26,56 +23,7 @@ const PAYMENT_METHODS: {
 const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCardProps) => {
   const [amount, setAmount] = useState("");
   const [dialerError, setDialerError] = useState<string | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("evc");
-  const [paymentStep, setPaymentStep] = useState<"entry" | "waiting" | "rating" | "done">("entry");
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [feedbackError, setFeedbackError] = useState<string | null>(null);
-
-  const playConfirmationSound = () => {
-    try {
-      const AudioContextClass = window.AudioContext;
-      if (!AudioContextClass) return;
-      const context = new AudioContextClass();
-      void context.resume().then(() => {
-        [660, 880].forEach((frequency, index) => {
-          const oscillator = context.createOscillator();
-          const gain = context.createGain();
-          const start = context.currentTime + index * 0.14;
-          oscillator.type = "sine";
-          oscillator.frequency.value = frequency;
-          gain.gain.setValueAtTime(0.0001, start);
-          gain.gain.exponentialRampToValueAtTime(0.12, start + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
-          oscillator.connect(gain).connect(context.destination);
-          oscillator.start(start);
-          oscillator.stop(start + 0.23);
-        });
-        window.setTimeout(() => void context.close(), 650);
-      }).catch(() => void context.close());
-    } catch {
-      // Audio may be blocked or unavailable; keep the feedback flow usable.
-    }
-  };
-
-  const submitFeedback = async () => {
-    if (!merchant || rating === 0 || isSending) return;
-    setIsSending(true);
-    setFeedbackError(null);
-    const { error: saveError } = await supabase.from("merchant_feedback").insert({
-      merchant_id: merchant.id,
-      rating,
-      comment: comment.trim() || null,
-    });
-    setIsSending(false);
-    if (saveError) {
-      setFeedbackError("Qiimeynta lama dirin. Fadlan mar kale isku day.");
-      return;
-    }
-    setPaymentStep("done");
-  };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -104,25 +52,10 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
       setDialerError("Ganacsade lama helin");
       return;
     }
-    setDialerError(null);
-    setConfirmOpen(true);
-  };
-
-  const confirmPayment = () => {
     const ussdCode = generateUssdCode();
     if (!ussdCode) return;
-    setConfirmOpen(false);
-    setPaymentStep("waiting");
     window.location.href = `tel:${ussdCode}`;
   };
-
-  const methodLabel = PAYMENT_METHODS.find((m) => m.id === method)?.label ?? "";
-  const methodLogo =
-    method === "evc"
-      ? merchant?.evc_logo_url
-      : method === "edahab"
-      ? merchant?.edahab_logo_url
-      : merchant?.premier_logo_url;
 
   if (isLoading) {
     return (
@@ -222,37 +155,6 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
           Payment
         </p>
 
-        {paymentStep === "waiting" ? (
-          <div className="mt-10 text-center space-y-5" aria-live="polite">
-            <p className="text-sm text-muted-foreground">Markaad USSD-ga ku dhammayso lacag-bixinta, halkan ku xaqiiji.</p>
-            <Button className="w-full h-14 rounded-full font-bold" onClick={() => { playConfirmationSound(); setPaymentStep("rating"); }}>
-              Waan bixiyey
-            </Button>
-            <Button variant="ghost" className="w-full" onClick={() => setPaymentStep("entry")}>Dib u noqo</Button>
-          </div>
-        ) : paymentStep === "rating" || paymentStep === "done" ? (
-          <div className="mt-9 text-center" aria-live="polite">
-            <CheckCircle2 className="mx-auto size-12 text-primary" aria-hidden="true" />
-            <h2 className="mt-4 text-xl font-bold text-foreground">Waad mahadsan tahay</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Lacag-bixintaada adigaa xaqiijiyey. Sidee ahayd adeeggu?</p>
-            {paymentStep === "rating" ? (
-              <div className="mt-6 space-y-5">
-                <div className="flex justify-center gap-1" role="group" aria-label="Qiimee adeegga 1 ilaa 5 xiddigood">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Button key={star} type="button" variant="ghost" size="icon" className="size-11 p-0 hover:bg-transparent" aria-label={`${star} xiddig${star === 1 ? "" : "ood"}`} aria-pressed={rating === star} onClick={() => setRating(star)}>
-                      <Star className={`!size-8 ${star <= rating ? "fill-primary text-primary" : "text-muted-foreground"}`} aria-hidden="true" />
-                    </Button>
-                  ))}
-                </div>
-                <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={500} rows={3} placeholder="Fikirkaaga (ikhtiyaari)" aria-label="Fikirkaaga" className="w-full resize-none rounded-md border border-input bg-background p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-                {feedbackError && <p role="alert" className="text-sm text-destructive">{feedbackError}</p>}
-                <Button className="w-full h-12 rounded-full" disabled={!rating || isSending} onClick={submitFeedback}>{isSending ? "Waa la dirayaa..." : "Dir qiimeynta"}</Button>
-                <Button variant="ghost" className="w-full" onClick={() => setPaymentStep("done")}>Ka bood</Button>
-              </div>
-            ) : <p className="mt-5 text-sm text-primary">Mahadsanid!</p>}
-            {paymentStep === "done" && <Button variant="outline" className="mt-6" onClick={() => { setAmount(""); setRating(0); setComment(""); setPaymentStep("entry"); }}>Lacag kale bixi</Button>}
-          </div>
-        ) : <>
         {/* Amount */}
         <div className="mt-10 flex items-baseline justify-center gap-2">
           <input
@@ -281,9 +183,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
                 ? merchant.edahab_logo_url
                 : merchant.premier_logo_url;
             return (
-              <Button
-                type="button"
-                variant="outline"
+              <button
                 key={m.id}
                 onClick={() => setMethod(m.id)}
                 className={`flex flex-col items-center justify-center gap-1.5 h-[72px] rounded-xl border transition-all duration-200 px-2 ${
@@ -304,7 +204,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
                 ) : (
                   <span className="text-sm font-semibold">{m.label}</span>
                 )}
-              </Button>
+              </button>
             );
           })}
         </div>
@@ -316,64 +216,15 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
         )}
 
         {/* DIR Button */}
-        <Button
+        <button
           onClick={handleSubmit}
           disabled={!amount || parseFloat(amount) <= 0}
           className="mt-10 flex w-full items-center justify-center rounded-full h-14 bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-primary-foreground text-base font-bold tracking-wide shadow-payment"
         >
           DIR
-        </Button>
-        </>}
+        </button>
       </div>
 
-
-      {/* Confirm Dialog */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-[340px] rounded-2xl bg-card px-6 py-6 gap-0 shadow-payment [&>button]:hidden">
-          <DialogHeader>
-            <DialogTitle className="text-center text-lg font-bold tracking-tight text-foreground">
-              Xaqiiji Lacag Bixinta
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="mt-5 flex flex-col items-center gap-4">
-            {/* Merchant */}
-            <div className="flex w-full items-center gap-3 rounded-xl bg-muted/60 p-3">
-              {merchant.logo_url ? (
-                <img src={merchant.logo_url} alt={merchant.name} className="size-10 shrink-0 rounded-full object-cover ring-1 ring-border" />
-              ) : (
-                <Store className="size-6 shrink-0 text-primary" />
-              )}
-              <span className="truncate text-sm font-semibold text-foreground">{merchant.name}</span>
-            </div>
-
-            {/* Amount */}
-            <div className="text-center">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{amount}</p>
-              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">USD</p>
-            </div>
-
-            {/* Method */}
-            <div className="flex w-full items-center justify-center gap-2 rounded-full border border-border py-2">
-              {methodLogo && <img src={methodLogo} alt={methodLabel} className="h-5 w-auto object-contain" />}
-              <span className="text-sm font-semibold text-foreground">{methodLabel}</span>
-            </div>
-
-            {/* USSD preview */}
-            <div className="w-full rounded-xl bg-muted/60 p-3 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">USSD Code</p>
-              <code className="mt-1 block break-all text-sm font-bold text-primary">{generateUssdCode()}</code>
-            </div>
-
-            <Button className="mt-1 h-14 w-full rounded-full font-bold" onClick={confirmPayment}>
-              Xaqiiji & Wac
-            </Button>
-            <Button variant="ghost" className="w-full" onClick={() => setConfirmOpen(false)}>
-              Jooji
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Security badge */}
       <div className="flex items-center justify-center opacity-70">
