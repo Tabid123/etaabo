@@ -327,6 +327,54 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
       </div>
 
 
+      {/* Confirm Dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-[340px] rounded-2xl bg-card px-6 py-6 gap-0 shadow-payment [&>button]:hidden">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold tracking-tight text-foreground">
+              Xaqiiji Lacag Bixinta
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-5 flex flex-col items-center gap-4">
+            {/* Merchant */}
+            <div className="flex w-full items-center gap-3 rounded-xl bg-muted/60 p-3">
+              {merchant.logo_url ? (
+                <img src={merchant.logo_url} alt={merchant.name} className="size-10 shrink-0 rounded-full object-cover ring-1 ring-border" />
+              ) : (
+                <Store className="size-6 shrink-0 text-primary" />
+              )}
+              <span className="truncate text-sm font-semibold text-foreground">{merchant.name}</span>
+            </div>
+
+            {/* Amount */}
+            <div className="text-center">
+              <p className="text-4xl font-bold tracking-tight text-foreground">{amount}</p>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">USD</p>
+            </div>
+
+            {/* Method */}
+            <div className="flex w-full items-center justify-center gap-2 rounded-full border border-border py-2">
+              {methodLogo && <img src={methodLogo} alt={methodLabel} className="h-5 w-auto object-contain" />}
+              <span className="text-sm font-semibold text-foreground">{methodLabel}</span>
+            </div>
+
+            {/* USSD preview */}
+            <div className="w-full rounded-xl bg-muted/60 p-3 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">USSD Code</p>
+              <code className="mt-1 block break-all text-sm font-bold text-primary">{generateUssdCode()}</code>
+            </div>
+
+            <Button className="mt-1 h-13 w-full rounded-full font-bold" onClick={confirmPayment}>
+              Xaqiiji & Wac
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setConfirmOpen(false)}>
+              Jooji
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Security badge */}
       <div className="flex items-center justify-center opacity-70">
         <p className="text-muted-foreground text-xs font-medium">
