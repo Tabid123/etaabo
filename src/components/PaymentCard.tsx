@@ -365,7 +365,7 @@ const PaymentCard = ({ merchant, isLoading, error, noMerchantParam }: PaymentCar
               <code className="mt-1 block break-all text-sm font-bold text-primary">{generateUssdCode()}</code>
             </div>
 
-            <Button className="mt-1 h-13 w-full rounded-full font-bold" onClick={confirmPayment}>
+            <Button className="mt-1 h-14 w-full rounded-full font-bold" onClick={confirmPayment}>
               Xaqiiji & Wac
             </Button>
             <Button variant="ghost" className="w-full" onClick={() => setConfirmOpen(false)}>
