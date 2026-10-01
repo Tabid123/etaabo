@@ -3,6 +3,7 @@ import { Store, AlertCircle, Star, CheckCircle2 } from "lucide-react";
 import type { Merchant } from "@/hooks/useMerchant";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface PaymentCardProps {
   merchant: Merchant | null;
