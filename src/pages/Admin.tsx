@@ -185,10 +185,52 @@ const Admin = () => {
           .update(payload)
           .eq("id", editingMerchant.id);
         if (error) throw error;
+
+        const { data: existingEvc } = await supabase
+          .from("merchant_payment_methods")
+          .select("id")
+          .eq("merchant_id", editingMerchant.id)
+          .eq("provider", "evc")
+          .maybeSingle();
+
+        if (existingEvc) {
+          const { error: evcError } = await supabase
+            .from("merchant_payment_methods")
+            .update({
+              label: "EVC Plus",
+              phone_number: formData.phone_number,
+              ussd_template: `${formData.ussd_base_code}{phone}*{amount}#`,
+              logo_url: formData.evc_logo_url || null,
+              is_active: formData.is_active,
+            })
+            .eq("id", existingEvc.id);
+          if (evcError) throw evcError;
+        }
+
         toast.success("Merchant updated successfully");
       } else {
-        const { error } = await supabase.from("merchants").insert(payload);
+        const { data: createdMerchant, error } = await supabase
+          .from("merchants")
+          .insert(payload)
+          .select("id")
+          .single();
+
         if (error) throw error;
+
+        const { error: paymentMethodError } = await supabase
+          .from("merchant_payment_methods")
+          .insert({
+            merchant_id: createdMerchant.id,
+            provider: "evc",
+            label: "EVC Plus",
+            phone_number: formData.phone_number,
+            ussd_template: `${formData.ussd_base_code}{phone}*{amount}#`,
+            logo_url: formData.evc_logo_url || null,
+            is_active: formData.is_active,
+            sort_order: 10,
+          });
+
+        if (paymentMethodError) throw paymentMethodError;
         toast.success("Merchant created successfully");
       }
 
