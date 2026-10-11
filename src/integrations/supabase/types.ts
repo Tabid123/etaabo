@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      merchant_payment_methods: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          logo_url: string | null
+          merchant_id: string
+          phone_number: string
+          provider: string
+          sort_order: number
+          updated_at: string
+          ussd_template: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          logo_url?: string | null
+          merchant_id: string
+          phone_number: string
+          provider: string
+          sort_order?: number
+          updated_at?: string
+          ussd_template: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          logo_url?: string | null
+          merchant_id?: string
+          phone_number?: string
+          provider?: string
+          sort_order?: number
+          updated_at?: string
+          ussd_template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_payment_methods_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           banner_url: string | null
@@ -64,6 +114,66 @@ export type Database = {
           ussd_base_code?: string
         }
         Relationships: []
+      }
+      payment_sessions: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          currency: string
+          id: string
+          initiated_at: string
+          merchant_id: string
+          payment_method_id: string
+          provider: string
+          source: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          initiated_at?: string
+          merchant_id: string
+          payment_method_id: string
+          provider: string
+          source?: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          initiated_at?: string
+          merchant_id?: string
+          payment_method_id?: string
+          provider?: string
+          source?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_sessions_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_sessions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
