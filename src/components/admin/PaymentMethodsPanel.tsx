@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { DEFAULT_PAYMENT_LOGOS, getPaymentLogo } from "@/lib/paymentLogos";
 
 type PaymentMethodRow = {
   id: string;
@@ -33,11 +34,11 @@ const emptyForm = {
   sort_order: 10,
 };
 
-const providerDefaults: Record<string, { label: string; template: string }> = {
-  evc: { label: "EVC Plus", template: "*712*{phone}*{amount}#" },
-  edahab: { label: "eDahab", template: "*110*{phone}*{amount}#" },
-  premier: { label: "Premier", template: "*123*{phone}*{amount}#" },
-  other: { label: "Other", template: "*CODE*{phone}*{amount}#" },
+const providerDefaults: Record<string, { label: string; template: string; logo: string }> = {
+  evc: { label: "EVC Plus", template: "*712*{phone}*{amount}#", logo: DEFAULT_PAYMENT_LOGOS.evc },
+  edahab: { label: "eDahab", template: "*110*{phone}*{amount}#", logo: DEFAULT_PAYMENT_LOGOS.edahab },
+  premier: { label: "Premier Wallet", template: "*123*{phone}*{amount}#", logo: DEFAULT_PAYMENT_LOGOS.premier },
+  other: { label: "Other", template: "*CODE*{phone}*{amount}#", logo: "" },
 };
 
 export default function PaymentMethodsPanel({ merchants }: { merchants: Merchant[] }) {
@@ -115,6 +116,7 @@ export default function PaymentMethodsPanel({ merchants }: { merchants: Merchant
       provider,
       label: defaults.label,
       ussd_template: defaults.template,
+      logo_url: defaults.logo,
     }));
   };
 
@@ -135,7 +137,7 @@ export default function PaymentMethodsPanel({ merchants }: { merchants: Merchant
       label: form.label.trim(),
       phone_number: form.phone_number.trim(),
       ussd_template: form.ussd_template.trim(),
-      logo_url: form.logo_url.trim() || null,
+      logo_url: form.logo_url.trim() || DEFAULT_PAYMENT_LOGOS[form.provider] || null,
       is_active: form.is_active,
       sort_order: Number(form.sort_order) || 0,
     };
@@ -215,7 +217,16 @@ export default function PaymentMethodsPanel({ merchants }: { merchants: Merchant
                 <div key={row.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                      {getPaymentLogo(row.provider, row.logo_url) && (
+                        <img
+                          src={getPaymentLogo(row.provider, row.logo_url) || ""}
+                          alt={row.label}
+                          className="h-7 w-auto max-w-[120px] object-contain"
+                        />
+                      )}
                       <p className="font-semibold">{row.label}</p>
+                    </div>
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${row.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>
                         {row.is_active ? "Active" : "Inactive"}
                       </span>
@@ -277,6 +288,7 @@ export default function PaymentMethodsPanel({ merchants }: { merchants: Merchant
             <div>
               <Label>Logo URL (optional)</Label>
               <Input className="mt-2" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} />
+              <p className="mt-1 text-xs text-muted-foreground">Haddii aad ka tagto default-ka, eTaabo wuxuu isticmaalayaa provider logo-ga default-ka ah.</p>
             </div>
             <div>
               <Label>Sort Order</Label>
