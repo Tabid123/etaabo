@@ -19,6 +19,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const { data: merchants = [], isLoading: merchantsLoading } = useMerchants();
   const queryClient = useQueryClient();
+  const adminLoginPath = window.location.hostname.toLowerCase() === "admin.etaabo.com" ? "/login" : "/admin/login";
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMerchant, setEditingMerchant] = useState<Merchant | null>(null);
@@ -41,7 +42,7 @@ const Admin = () => {
 
   // Redirect if not authenticated or not admin
   if (!isLoading && (!user || !isAdmin)) {
-    navigate("/admin/login", { replace: true });
+    navigate(adminLoginPath, { replace: true });
     return null;
   }
 
@@ -219,14 +220,14 @@ const Admin = () => {
   };
 
   const copyPaymentLink = (merchantId: string) => {
-    const url = `${window.location.origin}/pay?merchant=${merchantId}`;
+    const url = `https://etaabo.com/pay?merchant=${encodeURIComponent(merchantId)}`;
     navigator.clipboard.writeText(url);
     toast.success("Payment link copied!");
   };
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/admin/login");
+    navigate(adminLoginPath);
   };
 
   return (
