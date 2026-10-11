@@ -36,6 +36,18 @@ export default function PaymentSessionsPanel({ merchants }: { merchants: Merchan
     [merchants]
   );
 
+  const stats = useMemo(() => {
+    const initiated = rows.filter((row) => row.status === "initiated");
+    const confirmed = rows.filter((row) => row.status === "manual_confirmed");
+
+    return {
+      total: rows.length,
+      awaiting: initiated.length,
+      confirmed: confirmed.length,
+      confirmedAmount: confirmed.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+    };
+  }, [rows]);
+
   const load = async () => {
     setLoading(true);
     let query = supabase
@@ -58,6 +70,21 @@ export default function PaymentSessionsPanel({ merchants }: { merchants: Merchan
 
   useEffect(() => {
     void load();
+  }, [merchantFilter, statusFilter]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-payment-sessions")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payment_sessions" },
+        () => void load()
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [merchantFilter, statusFilter]);
 
   const updateStatus = async (row: SessionRow, status: "manual_confirmed" | "cancelled") => {
@@ -106,6 +133,25 @@ export default function PaymentSessionsPanel({ merchants }: { merchants: Merchan
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border p-4">
+            <p className="text-xs text-muted-foreground">Sessions</p>
+            <p className="mt-1 text-2xl font-bold">{stats.total}</p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-xs text-muted-foreground">Awaiting</p>
+            <p className="mt-1 text-2xl font-bold">{stats.awaiting}</p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-xs text-muted-foreground">Confirmed</p>
+            <p className="mt-1 text-2xl font-bold">{stats.confirmed}</p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-xs text-muted-foreground">Confirmed Amount</p>
+            <p className="mt-1 text-2xl font-bold">${stats.confirmedAmount.toFixed(2)}</p>
+          </div>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
           <Select value={merchantFilter} onValueChange={setMerchantFilter}>
             <SelectTrigger><SelectValue placeholder="Merchant" /></SelectTrigger>
