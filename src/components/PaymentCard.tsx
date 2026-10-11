@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Loader2, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Merchant, MerchantPaymentMethod } from "@/hooks/useMerchant";
+import { getPaymentLogo } from "@/lib/paymentLogos";
 
 interface PaymentCardProps {
   merchant: Merchant | null;
@@ -245,11 +246,11 @@ const PaymentCard = ({
                       : "border-border bg-card text-foreground hover:border-primary/40"
                   }`}
                 >
-                  {paymentMethod.logo_url ? (
+                  {getPaymentLogo(paymentMethod.provider, paymentMethod.logo_url) ? (
                     <img
-                      src={paymentMethod.logo_url}
+                      src={getPaymentLogo(paymentMethod.provider, paymentMethod.logo_url) || ""}
                       alt={paymentMethod.label}
-                      className="h-7 w-auto object-contain"
+                      className="h-7 w-auto max-w-[110px] object-contain"
                     />
                   ) : null}
                   <span className="text-sm font-semibold leading-none">
