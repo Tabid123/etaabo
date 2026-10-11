@@ -269,7 +269,7 @@ const Admin = () => {
           phone_number: config.phone_number.trim(),
           ussd_template: config.ussd_template.trim(),
           logo_url: option.logo,
-          is_active: formData.is_active,
+          is_active: true,
           sort_order: option.sortOrder,
         };
 
