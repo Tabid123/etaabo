@@ -10,13 +10,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Shield, LogOut, Plus, Pencil, Trash2, Loader2, Store, Copy, ExternalLink } from "lucide-react";
+import { Shield, LogOut, Plus, Pencil, Trash2, Loader2, Store, Copy, ExternalLink, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import PaymentMethodsPanel from "@/components/admin/PaymentMethodsPanel";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
 import { DEFAULT_PAYMENT_LOGOS } from "@/lib/paymentLogos";
+
+type PaymentProvider = "evc" | "edahab" | "premier";
+
+type PaymentFormState = {
+  enabled: boolean;
+  phone_number: string;
+  ussd_template: string;
+};
+
+type PaymentSettings = Record<PaymentProvider, PaymentFormState>;
+
+const PAYMENT_OPTIONS: Array<{
+  id: PaymentProvider;
+  label: string;
+  logo: string;
+  sortOrder: number;
+}> = [
+  { id: "evc", label: "EVC Plus", logo: DEFAULT_PAYMENT_LOGOS.evc, sortOrder: 10 },
+  { id: "edahab", label: "eDahab", logo: DEFAULT_PAYMENT_LOGOS.edahab, sortOrder: 20 },
+  { id: "premier", label: "Premier Wallet", logo: DEFAULT_PAYMENT_LOGOS.premier, sortOrder: 30 },
+];
+
+const emptyPayments = (): PaymentSettings => ({
+  evc: { enabled: false, phone_number: "", ussd_template: "" },
+  edahab: { enabled: false, phone_number: "", ussd_template: "" },
+  premier: { enabled: false, phone_number: "", ussd_template: "" },
+});
+
+const getLegacyBaseCode = (template: string) => {
+  const match = template.match(/^\*?([^*#]+)\*/);
+  return match?.[1] || "712";
+};
 
 const Admin = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -27,24 +58,20 @@ const Admin = () => {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMerchant, setEditingMerchant] = useState<Merchant | null>(null);
+  const [loadingMerchantPayments, setLoadingMerchantPayments] = useState(false);
   const [formData, setFormData] = useState({
     merchant_id: "",
     name: "",
-    phone_number: "",
     logo_url: "",
     banner_url: "",
-    evc_logo_url: "",
-    edahab_logo_url: "",
-    premier_logo_url: "",
-    ussd_base_code: "712",
     currency: "USD",
     is_active: true,
   });
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(emptyPayments());
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
 
-  // Redirect if not authenticated or not admin
   if (!isLoading && (!user || !isAdmin)) {
     navigate(adminLoginPath, { replace: true });
     return null;
@@ -62,17 +89,14 @@ const Admin = () => {
     setFormData({
       merchant_id: "",
       name: "",
-      phone_number: "",
       logo_url: "",
       banner_url: "",
-      evc_logo_url: "",
-      edahab_logo_url: "",
-      premier_logo_url: "",
-      ussd_base_code: "712",
       currency: "USD",
       is_active: true,
     });
+    setPaymentSettings(emptyPayments());
     setEditingMerchant(null);
+    setLoadingMerchantPayments(false);
   };
 
   const openCreateDialog = () => {
@@ -80,22 +104,44 @@ const Admin = () => {
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (merchant: Merchant) => {
+  const openEditDialog = async (merchant: Merchant) => {
     setEditingMerchant(merchant);
     setFormData({
       merchant_id: merchant.merchant_id,
       name: merchant.name,
-      phone_number: merchant.phone_number,
       logo_url: merchant.logo_url || "",
       banner_url: merchant.banner_url || "",
-      evc_logo_url: merchant.evc_logo_url || "",
-      edahab_logo_url: merchant.edahab_logo_url || "",
-      premier_logo_url: merchant.premier_logo_url || "",
-      ussd_base_code: merchant.ussd_base_code,
       currency: merchant.currency,
       is_active: merchant.is_active,
     });
+    setPaymentSettings(emptyPayments());
     setIsDialogOpen(true);
+    setLoadingMerchantPayments(true);
+
+    const { data, error } = await supabase
+      .from("merchant_payment_methods")
+      .select("provider,phone_number,ussd_template,is_active")
+      .eq("merchant_id", merchant.id)
+      .in("provider", ["evc", "edahab", "premier"]);
+
+    setLoadingMerchantPayments(false);
+
+    if (error) {
+      toast.error("Payments-ka merchant-ka lama soo qaadi karin", { description: error.message });
+      return;
+    }
+
+    const next = emptyPayments();
+    (data || []).forEach((row) => {
+      if (row.provider === "evc" || row.provider === "edahab" || row.provider === "premier") {
+        next[row.provider] = {
+          enabled: row.is_active,
+          phone_number: row.phone_number,
+          ussd_template: row.ussd_template,
+        };
+      }
+    });
+    setPaymentSettings(next);
   };
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,22 +162,18 @@ const Admin = () => {
       if (upErr) throw upErr;
       const { data } = supabase.storage.from("merchant-banners").getPublicUrl(path);
       setFormData((f) => ({ ...f, banner_url: data.publicUrl }));
-      toast.success("Banner uploaded", {
-        description: "Click Update Merchant to save",
-      });
+      toast.success("Banner uploaded", { description: "Click Save Merchant to persist" });
     } catch (err: any) {
-      console.error("Banner upload error:", err);
       toast.error("Upload failed", { description: err.message || "Unknown error" });
     } finally {
       setIsUploadingBanner(false);
-      // reset input so same file can be re-selected
       e.target.value = "";
     }
   };
 
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    field: "logo_url" | "evc_logo_url" | "edahab_logo_url" | "premier_logo_url"
+    field: "logo_url"
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -150,9 +192,8 @@ const Admin = () => {
       if (upErr) throw upErr;
       const { data } = supabase.storage.from("merchant-banners").getPublicUrl(path);
       setFormData((f) => ({ ...f, [field]: data.publicUrl }));
-      toast.success("Image uploaded", { description: "Click Save to persist" });
+      toast.success("Image uploaded", { description: "Click Save Merchant to persist" });
     } catch (err: any) {
-      console.error("Image upload error:", err);
       toast.error("Upload failed", { description: err.message || "Unknown error" });
     } finally {
       setUploadingField(null);
@@ -160,58 +201,141 @@ const Admin = () => {
     }
   };
 
+  const setPaymentEnabled = (provider: PaymentProvider, enabled: boolean) => {
+    setPaymentSettings((current) => ({
+      ...current,
+      [provider]: {
+        ...current[provider],
+        enabled,
+      },
+    }));
+  };
+
+  const updatePayment = (
+    provider: PaymentProvider,
+    field: "phone_number" | "ussd_template",
+    value: string
+  ) => {
+    setPaymentSettings((current) => ({
+      ...current,
+      [provider]: {
+        ...current[provider],
+        [field]: value,
+      },
+    }));
+  };
+
+  const validatePayments = () => {
+    const selected = PAYMENT_OPTIONS.filter((option) => paymentSettings[option.id].enabled);
+
+    if (selected.length === 0) {
+      toast.error("Dooro ugu yaraan hal payment method");
+      return false;
+    }
+
+    for (const option of selected) {
+      const payment = paymentSettings[option.id];
+      if (!payment.phone_number.trim() || !payment.ussd_template.trim()) {
+        toast.error(`${option.label}: geli number-ka iyo USSD code-ka`);
+        return false;
+      }
+      if (!payment.ussd_template.includes("{phone}") || !payment.ussd_template.includes("{amount}")) {
+        toast.error(`${option.label}: USSD-ga waa inuu leeyahay {phone} iyo {amount}`);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const syncPaymentMethods = async (merchantDbId: string) => {
+    const { data: existing, error: existingError } = await supabase
+      .from("merchant_payment_methods")
+      .select("id,provider")
+      .eq("merchant_id", merchantDbId)
+      .in("provider", ["evc", "edahab", "premier"]);
+
+    if (existingError) throw existingError;
+
+    for (const option of PAYMENT_OPTIONS) {
+      const config = paymentSettings[option.id];
+      const existingRow = existing?.find((row) => row.provider === option.id);
+
+      if (config.enabled) {
+        const payload = {
+          merchant_id: merchantDbId,
+          provider: option.id,
+          label: option.label,
+          phone_number: config.phone_number.trim(),
+          ussd_template: config.ussd_template.trim(),
+          logo_url: option.logo,
+          is_active: formData.is_active,
+          sort_order: option.sortOrder,
+        };
+
+        if (existingRow) {
+          const { error } = await supabase
+            .from("merchant_payment_methods")
+            .update(payload)
+            .eq("id", existingRow.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("merchant_payment_methods")
+            .insert(payload);
+          if (error) throw error;
+        }
+      } else if (existingRow) {
+        const { error } = await supabase
+          .from("merchant_payment_methods")
+          .update({ is_active: false })
+          .eq("id", existingRow.id);
+        if (error) throw error;
+      }
+    }
+  };
 
   const handleSave = async () => {
-    if (!formData.merchant_id || !formData.name || !formData.phone_number) {
-      toast.error("Please fill in all required fields");
+    if (!formData.merchant_id.trim() || !formData.name.trim()) {
+      toast.error("Merchant ID iyo Business Name waa required");
       return;
     }
+    if (!validatePayments()) return;
+
+    const firstEnabled =
+      PAYMENT_OPTIONS.map((option) => ({ option, config: paymentSettings[option.id] }))
+        .find(({ config }) => config.enabled);
+
+    if (!firstEnabled) return;
 
     setIsSaving(true);
 
     try {
+      const legacyPhone = firstEnabled.config.phone_number.trim();
+      const legacyBaseCode = getLegacyBaseCode(firstEnabled.config.ussd_template);
+
       const payload = {
-        merchant_id: formData.merchant_id,
-        name: formData.name,
-        phone_number: formData.phone_number,
+        merchant_id: formData.merchant_id.trim(),
+        name: formData.name.trim(),
+        phone_number: legacyPhone,
         logo_url: formData.logo_url || null,
         banner_url: formData.banner_url || null,
-        evc_logo_url: formData.evc_logo_url || DEFAULT_PAYMENT_LOGOS.evc,
-        edahab_logo_url: formData.edahab_logo_url || null,
-        premier_logo_url: formData.premier_logo_url || null,
-        ussd_base_code: formData.ussd_base_code,
+        evc_logo_url: DEFAULT_PAYMENT_LOGOS.evc,
+        edahab_logo_url: DEFAULT_PAYMENT_LOGOS.edahab,
+        premier_logo_url: DEFAULT_PAYMENT_LOGOS.premier,
+        ussd_base_code: legacyBaseCode,
         currency: formData.currency,
         is_active: formData.is_active,
       };
+
+      let merchantDbId = editingMerchant?.id;
+
       if (editingMerchant) {
         const { error } = await supabase
           .from("merchants")
           .update(payload)
           .eq("id", editingMerchant.id);
         if (error) throw error;
-
-        const { data: existingEvc } = await supabase
-          .from("merchant_payment_methods")
-          .select("id")
-          .eq("merchant_id", editingMerchant.id)
-          .eq("provider", "evc")
-          .maybeSingle();
-
-        if (existingEvc) {
-          const { error: evcError } = await supabase
-            .from("merchant_payment_methods")
-            .update({
-              label: "EVC Plus",
-              phone_number: formData.phone_number,
-              ussd_template: `${formData.ussd_base_code}{phone}*{amount}#`,
-              logo_url: formData.evc_logo_url || DEFAULT_PAYMENT_LOGOS.evc,
-              is_active: formData.is_active,
-            })
-            .eq("id", existingEvc.id);
-          if (evcError) throw evcError;
-        }
-
-        toast.success("Merchant updated successfully");
       } else {
         const { data: createdMerchant, error } = await supabase
           .from("merchants")
@@ -220,29 +344,20 @@ const Admin = () => {
           .single();
 
         if (error) throw error;
-
-        const { error: paymentMethodError } = await supabase
-          .from("merchant_payment_methods")
-          .insert({
-            merchant_id: createdMerchant.id,
-            provider: "evc",
-            label: "EVC Plus",
-            phone_number: formData.phone_number,
-            ussd_template: `${formData.ussd_base_code}{phone}*{amount}#`,
-            logo_url: formData.evc_logo_url || DEFAULT_PAYMENT_LOGOS.evc,
-            is_active: formData.is_active,
-            sort_order: 10,
-          });
-
-        if (paymentMethodError) throw paymentMethodError;
-        toast.success("Merchant created successfully");
+        merchantDbId = createdMerchant.id;
       }
 
+      if (!merchantDbId) throw new Error("Merchant ID lama helin");
+
+      await syncPaymentMethods(merchantDbId);
+
+      toast.success(editingMerchant ? "Merchant waa la cusbooneysiiyay" : "Merchant waa la sameeyay");
       queryClient.invalidateQueries({ queryKey: ["merchants"] });
+      queryClient.invalidateQueries({ queryKey: ["merchant-payment-methods"] });
       setIsDialogOpen(false);
       resetForm();
     } catch (error: any) {
-      toast.error("Error saving merchant", { description: error.message });
+      toast.error("Merchant lama keydin", { description: error.message });
     } finally {
       setIsSaving(false);
     }
@@ -252,11 +367,7 @@ const Admin = () => {
     if (!confirm(`Are you sure you want to delete ${merchant.name}?`)) return;
 
     try {
-      const { error } = await supabase
-        .from("merchants")
-        .delete()
-        .eq("id", merchant.id);
-
+      const { error } = await supabase.from("merchants").delete().eq("id", merchant.id);
       if (error) throw error;
       toast.success("Merchant deleted");
       queryClient.invalidateQueries({ queryKey: ["merchants"] });
@@ -278,7 +389,6 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -286,7 +396,7 @@ const Admin = () => {
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground">Admin Panel</h1>
+              <h1 className="font-bold text-foreground">eTaabo Admin</h1>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
@@ -297,7 +407,6 @@ const Admin = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -307,149 +416,87 @@ const Admin = () => {
                 Merchants
               </CardTitle>
               <CardDescription>
-                Manage merchant accounts and payment settings
+                Dukaan kasta iyo payment methods-kiisa hal meel ka maamul.
               </CardDescription>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+            <Dialog
+              open={isDialogOpen}
+              onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) resetForm();
+              }}
+            >
               <DialogTrigger asChild>
                 <Button onClick={openCreateDialog}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Merchant
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+
+              <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>
-                    {editingMerchant ? "Edit Merchant" : "Add New Merchant"}
-                  </DialogTitle>
+                  <DialogTitle>{editingMerchant ? "Edit Merchant" : "Add New Merchant"}</DialogTitle>
                   <DialogDescription>
-                    {editingMerchant
-                      ? "Update merchant details and payment settings"
-                      : "Create a new merchant for USSD payments"}
+                    Xogta dukaanka iyo payments-ka uu isticmaalo halkaan ka maamul.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="merchant_id">Merchant ID *</Label>
-                    <Input
-                      id="merchant_id"
-                      placeholder="shop123"
-                      value={formData.merchant_id}
-                      onChange={(e) =>
-                        setFormData({ ...formData, merchant_id: e.target.value })
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Used in payment URL: /pay?merchant=shop123
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Business Name *</Label>
-                    <Input
-                      id="name"
-                      placeholder="Mogadishu Market"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone_number">Phone Number *</Label>
-                    <Input
-                      id="phone_number"
-                      placeholder="61XXXXXXX"
-                      value={formData.phone_number}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone_number: e.target.value })
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Merchant number for USSD code (without country code)
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ussd_base_code">USSD Base Code</Label>
-                    <Input
-                      id="ussd_base_code"
-                      placeholder="712"
-                      value={formData.ussd_base_code}
-                      onChange={(e) =>
-                        setFormData({ ...formData, ussd_base_code: e.target.value })
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Format: {formData.ussd_base_code}
-                      {formData.phone_number || "XXXXXXX"}*AMOUNT#
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="logo_url">Merchant Logo (optional)</Label>
-                    {formData.logo_url && (
-                      <img
-                        src={formData.logo_url}
-                        alt="Logo preview"
-                        className="w-20 h-20 object-cover rounded-full border border-border"
+
+                <div className="space-y-6 pt-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="merchant_id">Merchant ID *</Label>
+                      <Input
+                        id="merchant_id"
+                        placeholder="shop123"
+                        value={formData.merchant_id}
+                        onChange={(e) => setFormData({ ...formData, merchant_id: e.target.value })}
                       />
-                    )}
-                    <Input
-                      id="logo_file"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, "logo_url")}
-                      disabled={uploadingField === "logo_url"}
-                    />
-                    <Input
-                      id="logo_url"
-                      placeholder="Or paste image URL"
-                      value={formData.logo_url}
-                      onChange={(e) =>
-                        setFormData({ ...formData, logo_url: e.target.value })
-                      }
-                    />
-                    {uploadingField === "logo_url" && (
-                      <p className="text-xs text-muted-foreground">Uploading...</p>
-                    )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Business Name *</Label>
+                      <Input
+                        id="name"
+                        placeholder="Mogadishu Market"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      />
+                    </div>
                   </div>
-                  {(["evc", "edahab", "premier"] as const).map((m) => {
-                    const field = `${m}_logo_url` as
-                      | "evc_logo_url"
-                      | "edahab_logo_url"
-                      | "premier_logo_url";
-                    const label =
-                      m === "evc" ? "EVC Plus" : m === "edahab" ? "eDahab" : "Premier";
-                    return (
-                      <div key={m} className="space-y-2">
-                        <Label htmlFor={`${field}_file`}>{label} Logo (optional)</Label>
-                        {formData[field] && (
-                          <img
-                            src={formData[field]}
-                            alt={`${label} preview`}
-                            className="w-16 h-16 object-contain rounded-lg border border-border bg-white p-1"
-                          />
-                        )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="logo_url">Merchant Logo</Label>
+                    <div className="flex items-center gap-4">
+                      {formData.logo_url ? (
+                        <img
+                          src={formData.logo_url}
+                          alt="Logo preview"
+                          className="w-16 h-16 object-cover rounded-full border border-border"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full border border-dashed flex items-center justify-center">
+                          <Store className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-2">
                         <Input
-                          id={`${field}_file`}
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleImageUpload(e, field)}
-                          disabled={uploadingField === field}
+                          onChange={(e) => handleImageUpload(e, "logo_url")}
+                          disabled={uploadingField === "logo_url"}
                         />
                         <Input
                           placeholder="Or paste image URL"
-                          value={formData[field]}
-                          onChange={(e) =>
-                            setFormData({ ...formData, [field]: e.target.value })
-                          }
+                          value={formData.logo_url}
+                          onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
                         />
-                        {uploadingField === field && (
-                          <p className="text-xs text-muted-foreground">Uploading...</p>
-                        )}
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="banner_url">Promo Banner (optional)</Label>
+                    <Label htmlFor="banner_url">Promo Banner</Label>
                     {formData.banner_url && (
                       <img
                         src={formData.banner_url}
@@ -468,53 +515,109 @@ const Admin = () => {
                       id="banner_url"
                       placeholder="Or paste image URL"
                       value={formData.banner_url}
-                      onChange={(e) =>
-                        setFormData({ ...formData, banner_url: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, banner_url: e.target.value })}
                     />
-                    {isUploadingBanner && (
-                      <p className="text-xs text-muted-foreground">Uploading...</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-border p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-primary" />
+                      <div>
+                        <h3 className="font-semibold">Payments-ka Dukaanka</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Dooro payments-ka uu dukaankani isticmaalo. Payment kasta oo aad shiddo wuxuu kuu furayaa number iyo USSD.
+                        </p>
+                      </div>
+                    </div>
+
+                    {loadingMerchantPayments ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {PAYMENT_OPTIONS.map((option) => {
+                          const payment = paymentSettings[option.id];
+
+                          return (
+                            <div key={option.id} className="rounded-xl border border-border p-4">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-20 h-12 rounded-lg bg-white border flex items-center justify-center p-2">
+                                    <img
+                                      src={option.logo}
+                                      alt={option.label}
+                                      className="max-h-full max-w-full object-contain"
+                                    />
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold">{option.label}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {payment.enabled ? "Enabled" : "Disabled"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Switch
+                                  checked={payment.enabled}
+                                  onCheckedChange={(checked) => setPaymentEnabled(option.id, checked)}
+                                />
+                              </div>
+
+                              {payment.enabled && (
+                                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label>{option.label} Number *</Label>
+                                    <Input
+                                      placeholder="61XXXXXXX"
+                                      value={payment.phone_number}
+                                      onChange={(e) => updatePayment(option.id, "phone_number", e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>USSD Code / Template *</Label>
+                                    <Input
+                                      className="font-mono"
+                                      placeholder="*712*{phone}*{amount}#"
+                                      value={payment.ussd_template}
+                                      onChange={(e) => updatePayment(option.id, "ussd_template", e.target.value)}
+                                    />
+                                    <p className="text-[11px] text-muted-foreground">
+                                      Isticmaal {"{phone}"} iyo {"{amount}"} halka number-ka iyo lacagtu geli doonaan.
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
-                    <Input
-                      id="currency"
-                      value={formData.currency}
-                      disabled
-                      className="bg-muted"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Currency is locked to USD
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="is_active">Active</Label>
+
+                  <div className="flex items-center justify-between rounded-xl border border-border p-4">
+                    <div>
+                      <Label htmlFor="is_active">Merchant Active</Label>
+                      <p className="text-xs text-muted-foreground">Haddii la damiyo, payment page-ku ma shaqeynayo.</p>
+                    </div>
                     <Switch
                       id="is_active"
                       checked={formData.is_active}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, is_active: checked })
-                      }
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                     />
                   </div>
+
                   <Button
                     className="w-full"
                     onClick={handleSave}
-                    disabled={isSaving || isUploadingBanner}
+                    disabled={isSaving || isUploadingBanner || loadingMerchantPayments}
                   >
-                    {isSaving ? (
+                    {isSaving || isUploadingBanner ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Saving...
                       </>
-                    ) : isUploadingBanner ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Uploading banner...
-                      </>
                     ) : editingMerchant ? (
-                      "Update Merchant"
+                      "Save Merchant"
                     ) : (
                       "Create Merchant"
                     )}
@@ -523,16 +626,13 @@ const Admin = () => {
               </DialogContent>
             </Dialog>
           </CardHeader>
+
           <CardContent>
             {merchants.length === 0 ? (
               <div className="text-center py-12">
                 <Store className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">
-                  No merchants yet
-                </h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  Create your first merchant to start accepting payments
-                </p>
+                <h3 className="font-semibold text-foreground mb-2">No merchants yet</h3>
+                <p className="text-muted-foreground text-sm mb-4">Create your first merchant to start accepting payments</p>
                 <Button onClick={openCreateDialog}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Merchant
@@ -540,21 +640,13 @@ const Admin = () => {
               </div>
             ) : (
               <>
-                {/* Mobile: card list */}
                 <div className="md:hidden space-y-3">
                   {merchants.map((merchant) => (
-                    <div
-                      key={merchant.id}
-                      className="rounded-xl border border-border bg-card p-4 shadow-sm"
-                    >
+                    <div key={merchant.id} className="rounded-xl border border-border bg-card p-4 shadow-sm">
                       <div className="flex items-start gap-3">
                         <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
                           {merchant.logo_url ? (
-                            <img
-                              src={merchant.logo_url}
-                              alt={merchant.name}
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={merchant.logo_url} alt={merchant.name} className="w-full h-full object-cover" />
                           ) : (
                             <Store className="w-5 h-5 text-primary" />
                           )}
@@ -562,71 +654,31 @@ const Admin = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="font-semibold text-foreground truncate">
-                                {merchant.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {merchant.merchant_id}
-                              </p>
+                              <p className="font-semibold text-foreground truncate">{merchant.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{merchant.merchant_id}</p>
                             </div>
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${
-                                merchant.is_active
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${merchant.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                               {merchant.is_active ? "Active" : "Inactive"}
                             </span>
-                          </div>
-                          <div className="mt-2 space-y-1 text-xs">
-                            <div className="flex justify-between gap-2">
-                              <span className="text-muted-foreground">Phone</span>
-                              <span className="font-mono text-foreground">
-                                {merchant.phone_number}
-                              </span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                              <span className="text-muted-foreground">USSD</span>
-                              <span className="font-mono text-foreground truncate">
-                                *{merchant.ussd_base_code}
-                                {merchant.phone_number}*AMT#
-                              </span>
-                            </div>
                           </div>
                         </div>
                       </div>
                       <div className="mt-3 flex items-center justify-end gap-1 border-t border-border pt-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => copyPaymentLink(merchant.merchant_id)}
-                          title="Copy payment link"
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => copyPaymentLink(merchant.merchant_id)} title="Copy payment link">
                           <Copy className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() =>
-                            window.open(`https://etaabo.com/pay?merchant=${encodeURIComponent(merchant.merchant_id)}`, "_blank")
-                          }
+                          onClick={() => window.open(`https://etaabo.com/pay?merchant=${encodeURIComponent(merchant.merchant_id)}`, "_blank")}
                           title="Preview"
                         >
                           <ExternalLink className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(merchant)}
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => void openEditDialog(merchant)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(merchant)}
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(merchant)}>
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
@@ -634,15 +686,13 @@ const Admin = () => {
                   ))}
                 </div>
 
-                {/* Desktop: table */}
                 <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Merchant</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>USSD Code</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Payment Link</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -653,75 +703,42 @@ const Admin = () => {
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
                                 {merchant.logo_url ? (
-                                  <img
-                                    src={merchant.logo_url}
-                                    alt={merchant.name}
-                                    className="w-full h-full object-cover"
-                                  />
+                                  <img src={merchant.logo_url} alt={merchant.name} className="w-full h-full object-cover" />
                                 ) : (
                                   <Store className="w-5 h-5 text-primary" />
                                 )}
                               </div>
                               <div>
-                                <p className="font-medium text-foreground">
-                                  {merchant.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {merchant.merchant_id}
-                                </p>
+                                <p className="font-medium text-foreground">{merchant.name}</p>
+                                <p className="text-xs text-muted-foreground">{merchant.merchant_id}</p>
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono">
-                            {merchant.phone_number}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {merchant.ussd_base_code}
-                            {merchant.phone_number}*AMT#
-                          </TableCell>
                           <TableCell>
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                merchant.is_active
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${merchant.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                               {merchant.is_active ? "Active" : "Inactive"}
                             </span>
                           </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            etaabo.com/pay?merchant={merchant.merchant_id}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => copyPaymentLink(merchant.merchant_id)}
-                                title="Copy payment link"
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => copyPaymentLink(merchant.merchant_id)} title="Copy payment link">
                                 <Copy className="w-4 h-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() =>
-                                  window.open(`https://etaabo.com/pay?merchant=${encodeURIComponent(merchant.merchant_id)}`, "_blank")
-                                }
+                                onClick={() => window.open(`https://etaabo.com/pay?merchant=${encodeURIComponent(merchant.merchant_id)}`, "_blank")}
                                 title="Preview payment page"
                               >
                                 <ExternalLink className="w-4 h-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openEditDialog(merchant)}
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => void openEditDialog(merchant)}>
                                 <Pencil className="w-4 h-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(merchant)}
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(merchant)}>
                                 <Trash2 className="w-4 h-4 text-destructive" />
                               </Button>
                             </div>
@@ -737,7 +754,6 @@ const Admin = () => {
         </Card>
 
         <div className="mt-8 space-y-8">
-          <PaymentMethodsPanel merchants={merchants} />
           <PaymentSessionsPanel merchants={merchants} />
           <FinancialTransactionsPanel merchants={merchants} />
         </div>
