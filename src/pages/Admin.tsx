@@ -13,6 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Shield, LogOut, Plus, Pencil, Trash2, Loader2, Store, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import PaymentMethodsPanel from "@/components/admin/PaymentMethodsPanel";
+import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 
 const Admin = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -605,10 +607,7 @@ const Admin = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() =>
-                            window.open(
-                              `/pay?merchant=${merchant.merchant_id}`,
-                              "_blank"
-                            )
+                            window.open(`https://etaabo.com/pay?merchant=${encodeURIComponent(merchant.merchant_id)}`, "_blank")
                           }
                           title="Preview"
                         >
@@ -703,10 +702,7 @@ const Admin = () => {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() =>
-                                  window.open(
-                                    `/pay?merchant=${merchant.merchant_id}`,
-                                    "_blank"
-                                  )
+                                  window.open(`https://etaabo.com/pay?merchant=${encodeURIComponent(merchant.merchant_id)}`, "_blank")
                                 }
                                 title="Preview payment page"
                               >
@@ -737,6 +733,11 @@ const Admin = () => {
             )}
           </CardContent>
         </Card>
+
+        <div className="mt-8 space-y-8">
+          <PaymentMethodsPanel merchants={merchants} />
+          <PaymentSessionsPanel merchants={merchants} />
+        </div>
       </main>
     </div>
   );
