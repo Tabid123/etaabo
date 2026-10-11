@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import PaymentMethodsPanel from "@/components/admin/PaymentMethodsPanel";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
+import { DEFAULT_PAYMENT_LOGOS } from "@/lib/paymentLogos";
 
 const Admin = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -175,7 +176,7 @@ const Admin = () => {
         phone_number: formData.phone_number,
         logo_url: formData.logo_url || null,
         banner_url: formData.banner_url || null,
-        evc_logo_url: formData.evc_logo_url || null,
+        evc_logo_url: formData.evc_logo_url || DEFAULT_PAYMENT_LOGOS.evc,
         edahab_logo_url: formData.edahab_logo_url || null,
         premier_logo_url: formData.premier_logo_url || null,
         ussd_base_code: formData.ussd_base_code,
@@ -203,7 +204,7 @@ const Admin = () => {
               label: "EVC Plus",
               phone_number: formData.phone_number,
               ussd_template: `${formData.ussd_base_code}{phone}*{amount}#`,
-              logo_url: formData.evc_logo_url || null,
+              logo_url: formData.evc_logo_url || DEFAULT_PAYMENT_LOGOS.evc,
               is_active: formData.is_active,
             })
             .eq("id", existingEvc.id);
@@ -228,7 +229,7 @@ const Admin = () => {
             label: "EVC Plus",
             phone_number: formData.phone_number,
             ussd_template: `${formData.ussd_base_code}{phone}*{amount}#`,
-            logo_url: formData.evc_logo_url || null,
+            logo_url: formData.evc_logo_url || DEFAULT_PAYMENT_LOGOS.evc,
             is_active: formData.is_active,
             sort_order: 10,
           });
