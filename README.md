@@ -37,3 +37,25 @@ npm run build
 ## Product scope
 
 eTaabo V1 focuses on Tap/QR payments, optional SMS money monitoring, incoming/outgoing transaction tracking, reports, devices/branches, and digital loyalty.
+
+
+## Cloudflare deployment
+
+eTaabo is prepared for Cloudflare Workers Static Assets using `wrangler.jsonc`.
+
+Cloudflare project:
+- Worker name: `etaabo`
+- Production branch: `main`
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy`
+- Output directory: `dist`
+
+The SPA fallback is configured with `not_found_handling = "single-page-application"`, so routes such as `/pay` and `/admin` work on direct refresh.
+
+For manual production publishing from GitHub Actions, create a Cloudflare Deploy Hook targeting `main` and save it as the GitHub Actions secret:
+
+```
+CLOUDFLARE_DEPLOY_HOOK
+```
+
+Then run **Actions → Publish eTaabo → Run workflow**.
