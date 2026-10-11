@@ -14,6 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
+      expense_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          category_id: string | null
+          counterparty: string | null
+          counterparty_name: string | null
+          created_at: string
+          currency: string
+          direction: string
+          id: string
+          merchant_id: string
+          message_excerpt: string | null
+          note: string | null
+          occurred_at: string
+          provider: string
+          source: string
+          tx_id: string | null
+          updated_at: string
+          verification_state: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          counterparty?: string | null
+          counterparty_name?: string | null
+          created_at?: string
+          currency?: string
+          direction: string
+          id?: string
+          merchant_id: string
+          message_excerpt?: string | null
+          note?: string | null
+          occurred_at?: string
+          provider: string
+          source?: string
+          tx_id?: string | null
+          updated_at?: string
+          verification_state?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          counterparty?: string | null
+          counterparty_name?: string | null
+          created_at?: string
+          currency?: string
+          direction?: string
+          id?: string
+          merchant_id?: string
+          message_excerpt?: string | null
+          note?: string | null
+          occurred_at?: string
+          provider?: string
+          source?: string
+          tx_id?: string | null
+          updated_at?: string
+          verification_state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_payment_methods: {
         Row: {
           created_at: string
