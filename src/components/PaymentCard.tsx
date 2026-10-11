@@ -250,12 +250,13 @@ const PaymentCard = ({
                     <img
                       src={getPaymentLogo(paymentMethod.provider, paymentMethod.logo_url) || ""}
                       alt={paymentMethod.label}
-                      className="h-7 w-auto max-w-[110px] object-contain"
+                      className="h-8 w-auto max-w-[120px] object-contain"
                     />
-                  ) : null}
-                  <span className="text-sm font-semibold leading-none">
-                    {paymentMethod.label}
-                  </span>
+                  ) : (
+                    <span className="text-sm font-semibold leading-none">
+                      {paymentMethod.label}
+                    </span>
+                  )}
                 </button>
               );
             })}
