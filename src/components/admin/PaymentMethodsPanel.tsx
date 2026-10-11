@@ -91,6 +91,7 @@ export default function PaymentMethodsPanel({ merchants }: { merchants: Merchant
       ...emptyForm,
       phone_number: phone,
       ussd_template: `*${base}*{phone}*{amount}#`,
+      logo_url: DEFAULT_PAYMENT_LOGOS.evc,
     });
     setDialogOpen(true);
   };
