@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - run: npm install -g npm@10.8.2
+      - run: npm --version
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm test -- --passWithNoTests
