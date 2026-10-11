@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import PaymentMethodsPanel from "@/components/admin/PaymentMethodsPanel";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
+import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
 
 const Admin = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -737,6 +738,7 @@ const Admin = () => {
         <div className="mt-8 space-y-8">
           <PaymentMethodsPanel merchants={merchants} />
           <PaymentSessionsPanel merchants={merchants} />
+          <FinancialTransactionsPanel merchants={merchants} />
         </div>
       </main>
     </div>
