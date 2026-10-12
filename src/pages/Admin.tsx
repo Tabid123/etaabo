@@ -655,8 +655,8 @@ const Admin = () => {
                       <h3 className="font-semibold">Admin-ka Ganacsadaha</h3>
                       <p className="text-xs text-muted-foreground">
                         {editingMerchant
-                          ? "Ku qor magaca iyo email-ka si aad u martiqaaddo ama ugu xirto Admin. Ka tag labadaba maran haddii aadan beddelayn."
-                          : "Waxaa ganacsadahan loo abuurayaa Admin u gaar ah. Email-ka ayuu ku heli doonaa casuumaad ammaan ah."}
+                          ? "Ku qor magaca iyo email-ka si aad account ugu xirto ama mid cusub ugu abuurto. Ka tag labadaba maran haddii aadan beddelayn."
+                          : "Waxaa ganacsadahan loo samaynayaa Admin u gaar ah. Password ku-meelgaar ah iyo labada link ayaa soo muuqanaya si aad hal mar u wada koobiyeeyso."}
                       </p>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
