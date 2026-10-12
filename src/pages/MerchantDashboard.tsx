@@ -314,21 +314,23 @@ function MerchantSettingsPanel({ merchant }: { merchant: Merchant }) {
 }
 
 const MerchantDashboard = () => {
-  const { user, isAdmin, isLoading, signOut } = useAuth();
+  const { user, isAdmin, mustChangePassword, isLoading, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
       navigate("/login", { replace: true });
+    } else if (mustChangePassword) {
+      navigate("/set-password", { replace: true });
     } else if (isAdmin) {
       navigate("/admin", { replace: true });
     }
-  }, [isLoading, user, isAdmin, navigate]);
+  }, [isLoading, user, isAdmin, mustChangePassword, navigate]);
 
   const { data: access = [], isLoading: accessLoading, error } = useQuery({
     queryKey: ["my-merchant-dashboard", user?.id],
-    enabled: Boolean(user && !isLoading && !isAdmin),
+    enabled: Boolean(user && !isLoading && !isAdmin && !mustChangePassword),
     queryFn: async (): Promise<MerchantAccess[]> => {
       if (!user) return [];
       const { data: memberships, error: membershipError } = await supabase
@@ -370,7 +372,7 @@ const MerchantDashboard = () => {
     navigate("/login", { replace: true });
   };
 
-  if (isLoading || accessLoading || (user && isAdmin)) {
+  if (isLoading || accessLoading || (user && (isAdmin || mustChangePassword))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
