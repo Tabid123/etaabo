@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,14 +13,38 @@ const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(false);
   const { signIn, isAdmin, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already logged in as admin
-  if (!isLoading && user && isAdmin) {
-    navigate("/admin", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (isLoading || !user) return;
+
+    if (isAdmin) {
+      navigate("/admin", { replace: true });
+      return;
+    }
+
+    let cancelled = false;
+    setCheckingAccess(true);
+    void supabase
+      .from("merchant_memberships")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setCheckingAccess(false);
+        if (!error && data && data.length > 0) {
+          navigate("/merchant", { replace: true });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoading, isAdmin, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +63,7 @@ const AdminLogin = () => {
     setIsSubmitting(false);
   };
 
-  if (isLoading) {
+  if (isLoading || checkingAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
