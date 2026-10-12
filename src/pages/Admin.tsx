@@ -460,7 +460,7 @@ const Admin = () => {
           merchantId: formData.merchant_id.trim(),
           adminName: typeof invitationData?.admin_name === "string" ? invitationData.admin_name : merchantAdminName.trim(),
           adminEmail: typeof invitationData?.email === "string" ? invitationData.email : merchantAdminEmail.trim(),
-          adminUrl: typeof invitationData?.admin_url === "string" ? invitationData.admin_url : "https://admin.etaabo.com/",
+          adminUrl: typeof invitationData?.admin_url === "string" ? invitationData.admin_url : "https://merchant.etaabo.com/",
           paymentUrl: typeof invitationData?.payment_url === "string" ? invitationData.payment_url : `https://etaabo.com/pay?merchant=${encodeURIComponent(formData.merchant_id.trim())}`,
           accountExists: invitationData?.account_exists === true,
           temporaryPassword: invitationData?.account_created === true ? generatedPassword : null,
