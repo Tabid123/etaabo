@@ -47,14 +47,33 @@ const SetPassword = () => {
       return;
     }
     setSaving(true);
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      setSaving(false);
+      toast.error("Fadlan mar kale login samee");
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast.error("Password-ka lama kaydin", { description: error.message });
       return;
     }
-    toast.success("Password waa la dejiyay");
-    navigate("/merchant", { replace: true });
+
+    const { error: flagError } = await supabase
+      .from("profiles")
+      .update({ must_change_password: false })
+      .eq("id", userData.user.id);
+
+    setSaving(false);
+    if (flagError) {
+      toast.error("Password-ka waa la beddelay, laakiin onboarding flag lama nadiifin", { description: flagError.message });
+      return;
+    }
+
+    toast.success("Password-kaaga cusub waa la dejiyay");
+    window.location.replace("/merchant");
   };
 
   if (checkingSession) {
