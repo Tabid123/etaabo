@@ -13,14 +13,17 @@ Never request or store a mobile-money PIN. Never classify money-in minus money-o
 The existing React/Vite app uses Supabase JS. The owned Supabase project `ksjheayntmkmiequihsa` currently has the merchant/payment tables plus `branches`, `merchant_memberships`, `devices`, `sms_readers`, `loyalty_customers`, `loyalty_rewards`, and `loyalty_activity`. `payment_sessions` includes branch/device/payer-reference fields; `financial_transactions` includes branch, reader, dedupe key and review state. RLS is enabled across the public tables at the time of inspection.
 
 Recent implementation work:
-- Regenerated `src/integrations/supabase/types.ts` from the current owned database schema.
-- Added a server-side `cancel_payment_session` RPC that requires authentication, checks merchant membership and only cancels an initiated, unconfirmed session.
-- Restricted the payment confirmation/cancellation and membership-helper RPCs from `anon`; authenticated execution remains for the intended app flows.
-- Added missing indexes for key branch/merchant foreign keys and transaction deduplication.
+- Regenerated `src/integrations/supabase/types.ts` from the current owned database schema, including `classify_financial_transaction`.
+- Added server-side `confirm_payment_session` / `cancel_payment_session` flows that require authentication, check merchant membership, and only confirm/cancel a session in a permitted state.
+- Added `merchant_admin_access_v1` migration and matching `supabase/migrations/20261012174029_merchant_admin_access_v1.sql` repository file: merchant owners/admins can read their own merchant profile and manage their own provider configuration.
+- Added `assign-merchant-admin` Supabase Edge Function (JWT required, caller must be a platform admin) to invite/link a merchant owner and write their profile/membership server-side. Current deployed version is 3; invitation redirect is `https://admin.etaabo.com/set-password`.
+- Added Admin form fields for merchant owner name/email and status badges to identify merchants without an active owner/admin membership.
+- Added `/set-password` for invited users and `/merchant` dashboard route for signed-in owner/admin memberships. Merchant dashboard queries only the signed-in user's memberships and then only those merchant IDs.
+- Added `classify_financial_transaction` RPC so outgoing transaction classification requires platform admin or merchant manager authorization and cannot be used to mark incoming transactions as classified.
 - Updated Payment Sessions UI to use protected RPCs instead of writing confirmation fields from the browser.
 - Corrected Money In/Out UI so categorizing an outgoing transaction changes `review_state`, not provider `verification_state`; categorization is not treated as proof of payment.
 
-Still not verified complete: migration history/source-of-truth alignment, old backend data migration, initial admin and merchant-member login paths, immutable device-token public route, SMS Reader pairing/parsing/sync, production deployment cutover, and end-to-end build/security tests.
+Not yet verified complete: invited-user journey end-to-end (including Supabase Auth redirect allow-list), first platform-admin bootstrap, branch-level cashier UI/permissions, immutable device-token public route, SMS Reader pairing/parsing/sync, old backend data migration, production deployment cutover, and a passing build/unit/end-to-end test run.
 
 ## Proposed data model
 
