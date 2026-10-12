@@ -18,6 +18,7 @@ type TransactionRow = {
   tx_id: string | null;
   occurred_at: string;
   verification_state: string;
+  review_state: string;
   category_id: string | null;
 };
 
@@ -49,7 +50,7 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
       outgoing: outgoing.reduce((sum, row) => sum + Number(row.amount || 0), 0),
       incomingCount: incoming.length,
       outgoingCount: outgoing.length,
-      needsReview: outgoing.filter((row) => row.verification_state === "unverified").length,
+      needsReview: outgoing.filter((row) => row.review_state === "needs_review" || !row.category_id).length,
     };
   }, [rows]);
 
@@ -58,7 +59,7 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
 
     let txQuery = supabase
       .from("financial_transactions")
-      .select("id,merchant_id,direction,provider,amount,currency,counterparty,tx_id,occurred_at,verification_state,category_id")
+      .select("id,merchant_id,direction,provider,amount,currency,counterparty,tx_id,occurred_at,verification_state,review_state,category_id")
       .order("occurred_at", { ascending: false })
       .limit(100);
 
@@ -116,7 +117,7 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
       .from("financial_transactions")
       .update({
         category_id: categoryId,
-        verification_state: "verified",
+        review_state: "classified",
         updated_at: new Date().toISOString(),
       })
       .eq("id", row.id);
@@ -128,7 +129,7 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
       return;
     }
 
-    toast.success("Outgoing transaction waa la classify-gareeyay");
+    toast.success("Outgoing transaction waa la kala saaray", { description: "Kala saaristu ma aha xaqiijin lacag-bixineed." });
     await load();
   };
 
@@ -229,7 +230,7 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
                     </div>
                   </div>
 
-                  {row.direction === "outgoing" && row.verification_state === "unverified" ? (
+                  {row.direction === "outgoing" && (row.review_state === "needs_review" || !row.category_id) ? (
                     <div className="min-w-[220px]">
                       <Select
                         disabled={actingId === row.id}
@@ -248,7 +249,7 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
                       </Select>
                     </div>
                   ) : row.direction === "outgoing" ? (
-                    <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">Verified</span>
+                    <span className="rounded-full border px-3 py-1 text-xs font-semibold">La kala saaray · weli ma aha payment verification</span>
                   ) : null}
                 </div>
               </div>
