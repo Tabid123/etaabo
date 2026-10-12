@@ -14,19 +14,32 @@ const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(false);
-  const { signIn, isAdmin, mustChangePassword, isLoading, user } = useAuth();
+  const { signIn, isAdmin, mustChangePassword, isLoading, user, signOut } = useAuth();
+  const isMerchantHost = window.location.hostname.toLowerCase() === "merchant.etaabo.com";
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isLoading || !user) return;
 
     if (mustChangePassword) {
-      navigate("/set-password", { replace: true });
+      if (isMerchantHost) {
+        navigate("/set-password", { replace: true });
+      } else {
+        void signOut().finally(() => {
+          window.location.replace("https://merchant.etaabo.com/login");
+        });
+      }
       return;
     }
 
     if (isAdmin) {
-      navigate("/admin", { replace: true });
+      if (isMerchantHost) {
+        void signOut().finally(() => {
+          window.location.replace("https://admin.etaabo.com/login");
+        });
+      } else {
+        navigate("/admin", { replace: true });
+      }
       return;
     }
 
@@ -42,14 +55,20 @@ const AdminLogin = () => {
         if (cancelled) return;
         setCheckingAccess(false);
         if (!error && data && data.length > 0) {
-          navigate("/merchant", { replace: true });
+          if (isMerchantHost) {
+            navigate("/merchant", { replace: true });
+          } else {
+            void signOut().finally(() => {
+              window.location.replace("https://merchant.etaabo.com/login");
+            });
+          }
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isLoading, isAdmin, mustChangePassword, user, navigate]);
+  }, [isLoading, isAdmin, mustChangePassword, user, navigate, isMerchantHost]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,9 +102,13 @@ const AdminLogin = () => {
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Shield className="w-6 h-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">eTaabo Admin</CardTitle>
+          <CardTitle className="text-2xl">
+            {isMerchantHost ? "eTaabo Merchant Admin" : "eTaabo Super Admin"}
+          </CardTitle>
           <CardDescription>
-            Soo gal dashboard-ka maamulka eTaabo
+            {isMerchantHost
+              ? "Soo gal dashboard-ka ganacsigaaga."
+              : "Soo gal maamulka guud ee nidaamka eTaabo."}
           </CardDescription>
         </CardHeader>
         <CardContent>
