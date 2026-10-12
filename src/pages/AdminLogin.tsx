@@ -14,11 +14,16 @@ const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(false);
-  const { signIn, isAdmin, isLoading, user } = useAuth();
+  const { signIn, isAdmin, mustChangePassword, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isLoading || !user) return;
+
+    if (mustChangePassword) {
+      navigate("/set-password", { replace: true });
+      return;
+    }
 
     if (isAdmin) {
       navigate("/admin", { replace: true });
@@ -44,7 +49,7 @@ const AdminLogin = () => {
     return () => {
       cancelled = true;
     };
-  }, [isLoading, isAdmin, user, navigate]);
+  }, [isLoading, isAdmin, mustChangePassword, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
