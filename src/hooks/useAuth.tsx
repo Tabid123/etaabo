@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  mustChangePassword: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -18,6 +19,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const checkAdminRole = async (userId: string) => {
@@ -41,40 +43,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Check admin role - use setTimeout to avoid race condition
-          setTimeout(async () => {
-            const adminStatus = await checkAdminRole(session.user.id);
-            setIsAdmin(adminStatus);
-            setIsLoading(false);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-          setIsLoading(false);
-        }
-      }
-    );
+  const checkMustChangePassword = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("must_change_password")
+      .eq("id", userId)
+      .maybeSingle();
 
-    // THEN get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const adminStatus = await checkAdminRole(session.user.id);
-        setIsAdmin(adminStatus);
+    if (error) {
+      console.error("Error checking temporary password flag:", error);
+      return true;
+    }
+
+    return data?.must_change_password === true;
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const syncUser = async (nextSession: Session | null) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user) {
+        setIsAdmin(false);
+        setMustChangePassword(false);
+        setIsLoading(false);
+        return;
       }
+
+      setIsLoading(true);
+      const [adminStatus, mustChange] = await Promise.all([
+        checkAdminRole(nextSession.user.id),
+        checkMustChangePassword(nextSession.user.id),
+      ]);
+
+      if (!active) return;
+      setIsAdmin(adminStatus);
+      setMustChangePassword(mustChange);
       setIsLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      // Keep auth-driven database reads outside the synchronous auth callback.
+      setTimeout(() => {
+        if (active) void syncUser(nextSession);
+      }, 0);
     });
 
-    return () => subscription.unsubscribe();
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (active) void syncUser(initialSession);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -96,10 +120,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
+    setMustChangePassword(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, mustChangePassword, isLoading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
