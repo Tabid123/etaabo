@@ -118,7 +118,7 @@ Deno.serve(async (req: Request) => {
       admin_name: fullName,
       merchant_name: merchant.name,
       merchant_id: merchant.merchant_id,
-      admin_url: "https://admin.etaabo.com/",
+      admin_url: "https://merchant.etaabo.com/",
       payment_url: `https://etaabo.com/pay?merchant=${encodeURIComponent(merchant.merchant_id)}`,
       message: accountCreated
         ? "Account created with a one-time password. The admin must change it at first sign-in."
