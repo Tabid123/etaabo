@@ -34,8 +34,25 @@ type MerchantHandoff = {
   adminEmail: string;
   adminUrl: string;
   paymentUrl: string;
-  inviteSent: boolean;
+  accountExists: boolean;
+  temporaryPassword: string | null;
   message: string;
+};
+
+const generateTemporaryPassword = () => {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*-_";
+  const maxValidByte = 256 - (256 % alphabet.length);
+  let password = "";
+  while (password.length < 22) {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    for (const byte of bytes) {
+      if (byte >= maxValidByte) continue;
+      password += alphabet[byte % alphabet.length];
+      if (password.length === 22) break;
+    }
+  }
+  return password;
 };
 
 const PAYMENT_OPTIONS: Array<{
@@ -334,13 +351,16 @@ const Admin = () => {
       `Email: ${merchantHandoff.adminEmail}`,
       `Admin login: ${merchantHandoff.adminUrl}`,
       `Payment page: ${merchantHandoff.paymentUrl}`,
-      merchantHandoff.inviteSent
-        ? "Account setup: Open the secure setup link sent to your email."
-        : "Account setup: Use your existing account to sign in.",
+      merchantHandoff.temporaryPassword
+        ? `Temporary password: ${merchantHandoff.temporaryPassword}`
+        : "Password: Existing account — the password was not changed.",
+      merchantHandoff.temporaryPassword
+        ? "Change this temporary password immediately after first login."
+        : "Use the password already associated with this email.",
       merchantHandoff.message,
     ];
     try {
-      await navigator.clipboard.writeText(details.join("\\n"));
+      await navigator.clipboard.writeText(details.join("\n"));
       toast.success("All details copied");
     } catch {
       toast.error("Copy failed", { description: "Allow clipboard access in the browser." });
@@ -415,6 +435,7 @@ const Admin = () => {
       await syncPaymentMethods(merchantDbId);
 
       if (merchantAdminEmail.trim()) {
+        const generatedPassword = generateTemporaryPassword();
         const { data: invitationData, error: invitationError } = await supabase.functions.invoke(
           "assign-merchant-admin",
           {
@@ -422,6 +443,7 @@ const Admin = () => {
               merchant_id: merchantDbId,
               full_name: merchantAdminName.trim(),
               email: merchantAdminEmail.trim(),
+              initial_password: generatedPassword,
             },
           },
         );
@@ -440,7 +462,8 @@ const Admin = () => {
           adminEmail: typeof invitationData?.email === "string" ? invitationData.email : merchantAdminEmail.trim(),
           adminUrl: typeof invitationData?.admin_url === "string" ? invitationData.admin_url : "https://admin.etaabo.com/",
           paymentUrl: typeof invitationData?.payment_url === "string" ? invitationData.payment_url : `https://etaabo.com/pay?merchant=${encodeURIComponent(formData.merchant_id.trim())}`,
-          inviteSent: invitationData?.invited === true,
+          accountExists: invitationData?.account_exists === true,
+          temporaryPassword: invitationData?.account_created === true ? generatedPassword : null,
           message: typeof invitationData?.message === "string" ? invitationData.message : "Admin account is linked to this business.",
         };
       }
@@ -518,7 +541,7 @@ const Admin = () => {
             <DialogHeader>
               <DialogTitle>Merchant Admin Details</DialogTitle>
               <DialogDescription>
-                Copy the full handoff and send it to your customer. Account setup is completed through the secure email link.
+                Copy the email, temporary password, admin link and payment page link to send to your customer.
               </DialogDescription>
             </DialogHeader>
             {merchantHandoff && (
@@ -544,11 +567,20 @@ const Admin = () => {
                     <Label>Payment Page</Label>
                     <Input readOnly value={merchantHandoff.paymentUrl} />
                   </div>
+                  <div className="space-y-1">
+                    <Label>{merchantHandoff.temporaryPassword ? "Temporary Password" : "Password"}</Label>
+                    <Input
+                      readOnly
+                      type="text"
+                      value={merchantHandoff.temporaryPassword ?? "Existing account — password unchanged"}
+                      className="font-mono"
+                    />
+                  </div>
                 </div>
                 <p className="rounded-lg bg-secondary p-3 text-sm">
-                  {merchantHandoff.inviteSent
-                    ? "A secure account setup link was sent to the admin email."
-                    : "An existing account was linked. Its sign-in credentials were not changed."}
+                  {merchantHandoff.temporaryPassword
+                    ? "Password-kan ku-meelgaarka ah hal mar ayaa la muujinayaa. Admin-ku waa inuu beddelaa marka ugu horreysa ee uu galo."
+                    : "Email-kan hore ayuu akoon u lahaa; password-kiisii lama beddelin."}
                 </p>
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                   <Button variant="outline" onClick={() => setHandoffOpen(false)}>Close</Button>
