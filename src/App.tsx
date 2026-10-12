@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Pay from "./pages/Pay";
 import Admin from "./pages/Admin";
@@ -31,6 +31,28 @@ const AppRoutes = () => {
   const hostname = window.location.hostname.toLowerCase();
   const isAdminHost = hostname === ADMIN_HOST;
   const isMerchantHost = hostname === MERCHANT_HOST;
+  const { user, isAdmin, mustChangePassword, isLoading } = useAuth();
+
+  if (
+    isMerchantHost &&
+    !isLoading &&
+    user &&
+    mustChangePassword &&
+    window.location.pathname !== "/set-password"
+  ) {
+    return <Navigate to="/set-password" replace />;
+  }
+
+  if (
+    isMerchantHost &&
+    !isLoading &&
+    user &&
+    isAdmin &&
+    window.location.pathname !== "/" &&
+    window.location.pathname !== "/login"
+  ) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (isAdminHost) {
     return (
