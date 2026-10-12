@@ -92,7 +92,7 @@ function MerchantSettingsPanel({ merchant }: { merchant: Merchant }) {
   const updatePayment = (provider: PaymentProvider, field: keyof ProviderForm, value: string | boolean) => {
     setPayments((current) => ({
       ...current,
-      [provider]: { ...current[provider], [field]: value },
+      [provider]: { ...current[provider], [field]: value } as ProviderForm,
     }));
   };
 
