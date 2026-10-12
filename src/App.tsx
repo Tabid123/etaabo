@@ -10,6 +10,7 @@ import Pay from "./pages/Pay";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import MerchantDashboard from "./pages/MerchantDashboard";
+import SetPassword from "./pages/SetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -17,7 +18,8 @@ const ADMIN_HOST = "admin.etaabo.com";
 
 const AdminDomainRedirect = () => {
   useEffect(() => {
-    window.location.replace(`https://${ADMIN_HOST}/`);
+    const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.replace(`https://${ADMIN_HOST}${currentPath || "/"}`);
   }, []);
 
   return null;
@@ -31,6 +33,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<AdminLogin />} />
         <Route path="/login" element={<AdminLogin />} />
+        <Route path="/set-password" element={<SetPassword />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/merchant" element={<MerchantDashboard />} />
         <Route path="/admin/login" element={<Navigate to="/login" replace />} />
