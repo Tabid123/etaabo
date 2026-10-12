@@ -19,6 +19,7 @@ Recent implementation work:
 - Added `assign-merchant-admin` Supabase Edge Function (JWT required, caller must be a platform admin) to invite/link a merchant owner and write their profile/membership server-side. Current deployed version is 3; invitation redirect is `https://admin.etaabo.com/set-password`.
 - Added Admin form fields for merchant owner name/email and status badges to identify merchants without an active owner/admin membership.
 - Added `/set-password` for invited users and `/merchant` dashboard route for signed-in owner/admin memberships. Merchant dashboard queries only the signed-in user's memberships and then only those merchant IDs.
+- Merchant Admin dashboard now provides tenant-scoped business profile fields (name, contact number, currency) and EVC Plus/eDahab/Premier receiving-number + USSD-template settings, protected by merchant-manager RLS policies.
 - Added `classify_financial_transaction` RPC so outgoing transaction classification requires platform admin or merchant manager authorization and cannot be used to mark incoming transactions as classified.
 - Updated Payment Sessions UI to use protected RPCs instead of writing confirmation fields from the browser.
 - Corrected Money In/Out UI so categorizing an outgoing transaction changes `review_state`, not provider `verification_state`; categorization is not treated as proof of payment.
