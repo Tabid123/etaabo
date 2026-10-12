@@ -11,6 +11,22 @@ function respond(status: number, payload: Record<string, unknown>) {
   return new Response(JSON.stringify(payload), { status, headers: corsHeaders });
 }
 
+function makeTemporaryPassword(length = 22): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*-_";
+  const maxValidByte = 256 - (256 % alphabet.length);
+  let result = "";
+  while (result.length < length) {
+    const bytes = new Uint8Array(length * 2);
+    crypto.getRandomValues(bytes);
+    for (const byte of bytes) {
+      if (byte >= maxValidByte) continue;
+      result += alphabet[byte % alphabet.length];
+      if (result.length === length) break;
+    }
+  }
+  return result;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -27,8 +43,7 @@ Deno.serve(async (req: Request) => {
     return respond(500, { error: "Authentication or server configuration is missing" });
   }
 
-  let invitedUserId: string | null = null;
-  let createdUser = false;
+  let createdUserId: string | null = null;
 
   try {
     const token = authorization.replace(/^Bearer\s+/i, "");
@@ -70,41 +85,54 @@ Deno.serve(async (req: Request) => {
 
     const { data: merchant, error: merchantError } = await service
       .from("merchants")
-      .select("id, name")
+      .select("id, name, merchant_id")
       .eq("id", merchantId)
       .maybeSingle();
     if (merchantError) throw merchantError;
     if (!merchant) return respond(404, { error: "Merchant not found" });
 
-    const { data: usersResult, error: usersError } = await service.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
-    if (usersError) throw usersError;
-    const existingUser = usersResult.users.find(
-      (candidate) => candidate.email?.trim().toLowerCase() === email,
-    );
+    let existingUser: { id: string; email?: string | null } | null = null;
+    for (let page = 1; page <= 100; page += 1) {
+      const { data: usersResult, error: usersError } = await service.auth.admin.listUsers({
+        page,
+        perPage: 1000,
+      });
+      if (usersError) throw usersError;
+      existingUser = usersResult.users.find(
+        (candidate) => candidate.email?.trim().toLowerCase() === email,
+      ) ?? null;
+      if (existingUser || usersResult.users.length < 1000) break;
+    }
 
     let userId: string;
+    let temporaryPassword: string | null = null;
+    let accountExists = Boolean(existingUser);
+
     if (existingUser) {
       userId = existingUser.id;
     } else {
-      const { data: inviteData, error: inviteError } = await service.auth.admin.inviteUserByEmail(
+      temporaryPassword = makeTemporaryPassword();
+      const { data: created, error: createError } = await service.auth.admin.createUser({
         email,
-        {
-          data: { full_name: fullName },
-          redirectTo: "https://admin.etaabo.com/set-password",
-        },
-      );
-      if (inviteError) throw inviteError;
-      if (!inviteData.user) throw new Error("Supabase did not return the invited user");
-      userId = inviteData.user.id;
-      invitedUserId = userId;
-      createdUser = true;
+        password: temporaryPassword,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
+      if (createError) throw createError;
+      if (!created.user) throw new Error("Supabase did not return the created user");
+      userId = created.user.id;
+      createdUserId = userId;
     }
 
+    const profilePayload: Record<string, unknown> = {
+      id: userId,
+      email,
+      full_name: fullName,
+    };
+    if (!accountExists) profilePayload.must_change_password = true;
+
     const { error: profileError } = await service.from("profiles").upsert(
-      { id: userId, email, full_name: fullName },
+      profilePayload,
       { onConflict: "id" },
     );
     if (profileError) throw profileError;
@@ -124,22 +152,27 @@ Deno.serve(async (req: Request) => {
 
     return respond(200, {
       ok: true,
-      invited: createdUser,
+      account_exists: accountExists,
+      password_generated: Boolean(temporaryPassword),
+      temporary_password: temporaryPassword,
       email,
+      admin_name: fullName,
       merchant_name: merchant.name,
-      message: createdUser
-        ? "Invitation sent. The merchant admin must accept the email invite to sign in."
-        : "Existing account linked as merchant owner.",
+      admin_url: "https://admin.etaabo.com/",
+      payment_url: `https://etaabo.com/pay?merchant=${encodeURIComponent(merchant.merchant_id)}`,
+      message: accountExists
+        ? "Existing account linked as merchant owner. Its password was not changed; ask the user to sign in with their current password."
+        : "Merchant admin account created. Share the temporary password securely and ask the user to change it at first sign-in.",
     });
   } catch (error) {
-    if (createdUser && invitedUserId) {
+    if (createdUserId) {
       try {
         const service = createClient(supabaseUrl, serviceKey, {
           auth: { persistSession: false, autoRefreshToken: false },
         });
-        await service.auth.admin.deleteUser(invitedUserId);
+        await service.auth.admin.deleteUser(createdUserId);
       } catch {
-        // Keep the original error as the useful outcome.
+        // Preserve the original error, but never log or return the temporary password.
       }
     }
     const message = error instanceof Error ? error.message : "Unexpected server error";
