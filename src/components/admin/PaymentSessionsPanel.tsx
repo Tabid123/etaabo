@@ -89,32 +89,22 @@ export default function PaymentSessionsPanel({ merchants }: { merchants: Merchan
 
   const updateStatus = async (row: SessionRow, status: "manual_confirmed" | "cancelled") => {
     setActingId(row.id);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const payload =
-      status === "manual_confirmed"
-        ? {
-            status,
-            confirmed_at: new Date().toISOString(),
-            confirmed_by: user?.id ?? null,
-          }
-        : {
-            status,
-            confirmed_at: null,
-            confirmed_by: null,
-          };
-
-    const { error } = await supabase.from("payment_sessions").update(payload).eq("id", row.id);
+    const rpcName = status === "manual_confirmed" ? "confirm_payment_session" : "cancel_payment_session";
+    const { error } = await supabase.rpc(rpcName, { _session_id: row.id });
     setActingId(null);
 
     if (error) {
-      toast.error("Status lama beddeli karin", { description: error.message });
+      toast.error(status === "manual_confirmed" ? "Payment-ka lama xaqiijin karin" : "Payment-ka lama cancel-gareyn karin", {
+        description: error.message,
+      });
       return;
     }
 
-    toast.success(status === "manual_confirmed" ? "Payment-ka waa la xaqiijiyay" : "Payment-ka waa la cancel gareeyay");
+    toast.success(
+      status === "manual_confirmed"
+        ? "Payment-ka gacanta ayaa loo xaqiijiyay"
+        : "Payment-ka waa la cancel-gareeyay"
+    );
     await load();
   };
 
