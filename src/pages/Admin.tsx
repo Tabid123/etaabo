@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Shield, LogOut, Plus, Pencil, Trash2, Loader2, Store, Copy, ExternalLink, CreditCard } from "lucide-react";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
 import { DEFAULT_PAYMENT_LOGOS } from "@/lib/paymentLogos";
@@ -68,6 +68,20 @@ const Admin = () => {
     is_active: true,
   });
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(emptyPayments());
+  const [merchantAdminName, setMerchantAdminName] = useState("");
+  const [merchantAdminEmail, setMerchantAdminEmail] = useState("");
+  const { data: merchantAdminIds = [] } = useQuery({
+    queryKey: ["merchant-admin-status"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_memberships")
+        .select("merchant_id,role,status")
+        .in("role", ["owner", "admin"])
+        .eq("status", "active");
+      if (error) throw error;
+      return Array.from(new Set((data ?? []).map((row) => row.merchant_id)));
+    },
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
@@ -95,6 +109,8 @@ const Admin = () => {
       is_active: true,
     });
     setPaymentSettings(emptyPayments());
+    setMerchantAdminName("");
+    setMerchantAdminEmail("");
     setEditingMerchant(null);
     setLoadingMerchantPayments(false);
   };
@@ -300,8 +316,17 @@ const Admin = () => {
       toast.error("Merchant ID iyo Business Name waa required");
       return;
     }
+    if (!editingMerchant && (!merchantAdminName.trim() || !merchantAdminEmail.trim())) {
+      toast.error("Geli magaca iyo email-ka Admin-ka ganacsadaha");
+      return;
+    }
+    if ((merchantAdminEmail.trim() && !merchantAdminName.trim()) || (!merchantAdminEmail.trim() && merchantAdminName.trim())) {
+      toast.error("Magaca iyo email-ka Admin-ka labadaba geli, ama labadaba ka tag marka merchant la edit-gareynayo");
+      return;
+    }
     if (!validatePayments()) return;
 
+    const wasEditing = Boolean(editingMerchant);
     const firstEnabled =
       PAYMENT_OPTIONS.map((option) => ({ option, config: paymentSettings[option.id] }))
         .find(({ config }) => config.enabled);
@@ -345,14 +370,36 @@ const Admin = () => {
 
         if (error) throw error;
         merchantDbId = createdMerchant.id;
+        setEditingMerchant({ id: createdMerchant.id, ...payload } as Merchant);
       }
 
       if (!merchantDbId) throw new Error("Merchant ID lama helin");
 
       await syncPaymentMethods(merchantDbId);
 
-      toast.success(editingMerchant ? "Merchant waa la cusbooneysiiyay" : "Merchant waa la sameeyay");
+      if (merchantAdminEmail.trim()) {
+        const { data: invitationData, error: invitationError } = await supabase.functions.invoke(
+          "assign-merchant-admin",
+          {
+            body: {
+              merchant_id: merchantDbId,
+              full_name: merchantAdminName.trim(),
+              email: merchantAdminEmail.trim(),
+            },
+          },
+        );
+
+        if (invitationError) {
+          throw new Error(`Merchant-ka waa la keydiyay, laakiin Admin-ka lama casuumin: ${invitationError.message}`);
+        }
+        if (invitationData?.error) {
+          throw new Error(`Merchant-ka waa la keydiyay, laakiin Admin-ka lama casuumin: ${invitationData.error}`);
+        }
+      }
+
+      toast.success(wasEditing ? "Merchant waa la cusbooneysiiyay" : "Merchant waa la sameeyay");
       queryClient.invalidateQueries({ queryKey: ["merchants"] });
+      queryClient.invalidateQueries({ queryKey: ["merchant-admin-status"] });
       queryClient.invalidateQueries({ queryKey: ["merchant-payment-methods"] });
       setIsDialogOpen(false);
       resetForm();
@@ -463,6 +510,43 @@ const Admin = () => {
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       />
                     </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border p-4 space-y-3">
+                    <div>
+                      <h3 className="font-semibold">Admin-ka Ganacsadaha</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {editingMerchant
+                          ? "Ku qor magaca iyo email-ka si aad u martiqaaddo ama ugu xirto Admin. Ka tag labadaba maran haddii aadan beddelayn."
+                          : "Waxaa ganacsadahan loo abuurayaa Admin u gaar ah. Email-ka ayuu ku heli doonaa casuumaad ammaan ah."}
+                      </p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="merchant_admin_name">Magaca Admin{editingMerchant ? "" : " *"}</Label>
+                        <Input
+                          id="merchant_admin_name"
+                          autoComplete="name"
+                          placeholder="Magaca ganacsadaha"
+                          value={merchantAdminName}
+                          onChange={(e) => setMerchantAdminName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="merchant_admin_email">Email-ka Admin{editingMerchant ? "" : " *"}</Label>
+                        <Input
+                          id="merchant_admin_email"
+                          type="email"
+                          autoComplete="email"
+                          placeholder="owner@example.com"
+                          value={merchantAdminEmail}
+                          onChange={(e) => setMerchantAdminEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      PIN ama password-ka ganacsadaha ma kaydinayno. Admin-ka cusub wuxuu email-ka ku helayaa link casuumaad ah.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -656,6 +740,9 @@ const Admin = () => {
                             <div className="min-w-0">
                               <p className="font-semibold text-foreground truncate">{merchant.name}</p>
                               <p className="text-xs text-muted-foreground truncate">{merchant.merchant_id}</p>
+                              <p className={`text-xs mt-1 ${merchantAdminIds.includes(merchant.id) ? "text-emerald-600" : "text-amber-600"}`}>
+                                {merchantAdminIds.includes(merchant.id) ? "Admin assigned" : "Admin not assigned"}
+                              </p>
                             </div>
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${merchant.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                               {merchant.is_active ? "Active" : "Inactive"}
@@ -692,6 +779,7 @@ const Admin = () => {
                       <TableRow>
                         <TableHead>Merchant</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Merchant Admin</TableHead>
                         <TableHead>Payment Link</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -717,6 +805,11 @@ const Admin = () => {
                           <TableCell>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${merchant.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                               {merchant.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${merchantAdminIds.includes(merchant.id) ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                              {merchantAdminIds.includes(merchant.id) ? "Assigned" : "Missing"}
                             </span>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
