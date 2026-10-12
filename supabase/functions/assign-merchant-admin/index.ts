@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
   let createdUser = false;
 
   try {
-    const token = authorization.replace(/^Bearer\\s+/i, "");
+    const token = authorization.replace(/^Bearer\s+/i, "");
     const callerClient = createClient(supabaseUrl, publicKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
     if (fullName.length < 2 || fullName.length > 120) {
       return respond(400, { error: "Full name must be between 2 and 120 characters" });
     }
-    if (email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return respond(400, { error: "Enter a valid email address" });
     }
 
