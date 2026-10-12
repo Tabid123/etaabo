@@ -15,29 +15,47 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 const ADMIN_HOST = "admin.etaabo.com";
+const MERCHANT_HOST = "merchant.etaabo.com";
 
-const AdminDomainRedirect = () => {
+const HostRedirect = ({ host, targetPath }: { host: string; targetPath?: string }) => {
   useEffect(() => {
-    const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.replace(`https://${ADMIN_HOST}${currentPath || "/"}`);
-  }, []);
+    const path = targetPath ??
+      `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.replace(`https://${host}${path || "/"}`);
+  }, [host, targetPath]);
 
   return null;
 };
 
 const AppRoutes = () => {
-  const isAdminHost = window.location.hostname.toLowerCase() === ADMIN_HOST;
+  const hostname = window.location.hostname.toLowerCase();
+  const isAdminHost = hostname === ADMIN_HOST;
+  const isMerchantHost = hostname === MERCHANT_HOST;
 
   if (isAdminHost) {
     return (
       <Routes>
         <Route path="/" element={<AdminLogin />} />
         <Route path="/login" element={<AdminLogin />} />
-        <Route path="/set-password" element={<SetPassword />} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="/merchant" element={<MerchantDashboard />} />
         <Route path="/admin/login" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/merchant" element={<HostRedirect host={MERCHANT_HOST} targetPath="/merchant" />} />
+        <Route path="/set-password" element={<HostRedirect host={MERCHANT_HOST} targetPath="/set-password" />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  if (isMerchantHost) {
+    return (
+      <Routes>
+        <Route path="/" element={<AdminLogin />} />
+        <Route path="/login" element={<AdminLogin />} />
+        <Route path="/set-password" element={<SetPassword />} />
+        <Route path="/merchant" element={<MerchantDashboard />} />
+        <Route path="/admin" element={<HostRedirect host={ADMIN_HOST} targetPath="/admin" />} />
+        <Route path="/admin/login" element={<HostRedirect host={ADMIN_HOST} targetPath="/login" />} />
+        <Route path="*" element={<Navigate to="/merchant" replace />} />
       </Routes>
     );
   }
@@ -46,9 +64,11 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/pay" element={<Pay />} />
-      <Route path="/admin" element={<AdminDomainRedirect />} />
-      <Route path="/admin/login" element={<AdminDomainRedirect />} />
-      <Route path="/merchant" element={<AdminDomainRedirect />} />
+      <Route path="/admin" element={<HostRedirect host={ADMIN_HOST} targetPath="/admin" />} />
+      <Route path="/admin/login" element={<HostRedirect host={ADMIN_HOST} targetPath="/login" />} />
+      <Route path="/merchant" element={<HostRedirect host={MERCHANT_HOST} targetPath="/merchant" />} />
+      <Route path="/login" element={<HostRedirect host={MERCHANT_HOST} targetPath="/login" />} />
+      <Route path="/set-password" element={<HostRedirect host={MERCHANT_HOST} targetPath="/set-password" />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
