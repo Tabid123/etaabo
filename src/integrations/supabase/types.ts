@@ -748,6 +748,10 @@ export type Database = {
         Args: { _session_id: string }
         Returns: undefined
       }
+      classify_financial_transaction: {
+        Args: { _category_id: string; _transaction_id: string }
+        Returns: undefined
+      }
       confirm_payment_session: {
         Args: { _session_id: string }
         Returns: undefined
