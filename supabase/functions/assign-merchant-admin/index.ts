@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
         email,
         {
           data: { full_name: fullName },
-          redirectTo: "https://admin.etaabo.com/",
+          redirectTo: "https://admin.etaabo.com/set-password",
         },
       );
       if (inviteError) throw inviteError;
