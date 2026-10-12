@@ -1,6 +1,6 @@
 # eTaabo V1 Technical Architecture
 
-Status: architecture draft; implementation and end-to-end validation are still in progress.
+Status: implementation in progress; the owned database has the core domain tables and RLS policies, but the complete app flow and end-to-end validation are not finished.
 
 ## Product boundary
 
@@ -10,16 +10,17 @@ Never request or store a mobile-money PIN. Never classify money-in minus money-o
 
 ## Current implementation observed
 
-The existing React/Vite app uses Supabase JS and currently queries these tables:
-- `merchants`
-- `merchant_payment_methods`
-- `payment_sessions`
-- `financial_transactions`
-- `expense_categories`
-- `profiles`
-- `user_roles`
+The existing React/Vite app uses Supabase JS. The owned Supabase project `ksjheayntmkmiequihsa` currently has the merchant/payment tables plus `branches`, `merchant_memberships`, `devices`, `sms_readers`, `loyalty_customers`, `loyalty_rewards`, and `loyalty_activity`. `payment_sessions` includes branch/device/payer-reference fields; `financial_transactions` includes branch, reader, dedupe key and review state. RLS is enabled across the public tables at the time of inspection.
 
-The new owned Supabase project is `ksjheayntmkmiequihsa`. Current schema has RLS enabled on these tables. The project migration, data migration from the former Lovable-managed backend, authentication setup, and deployment cutover are not yet verified complete.
+Recent implementation work:
+- Regenerated `src/integrations/supabase/types.ts` from the current owned database schema.
+- Added a server-side `cancel_payment_session` RPC that requires authentication, checks merchant membership and only cancels an initiated, unconfirmed session.
+- Restricted the payment confirmation/cancellation and membership-helper RPCs from `anon`; authenticated execution remains for the intended app flows.
+- Added missing indexes for key branch/merchant foreign keys and transaction deduplication.
+- Updated Payment Sessions UI to use protected RPCs instead of writing confirmation fields from the browser.
+- Corrected Money In/Out UI so categorizing an outgoing transaction changes `review_state`, not provider `verification_state`; categorization is not treated as proof of payment.
+
+Still not verified complete: migration history/source-of-truth alignment, old backend data migration, initial admin and merchant-member login paths, immutable device-token public route, SMS Reader pairing/parsing/sync, production deployment cutover, and end-to-end build/security tests.
 
 ## Proposed data model
 
@@ -74,7 +75,7 @@ The new owned Supabase project is `ksjheayntmkmiequihsa`. Current schema has RLS
 ## Build sequence
 
 1. Inspect and reconcile existing Supabase schema with the actual app hooks and components.
-2. Finish schema and RLS policies for branch/device/membership/SMS-reader/loyalty models.
+2. Audit and test existing schema/RLS for branch/device/membership/SMS-reader/loyalty models; add any missing migration history and tenant tests.
 3. Create the first Auth admin securely and test authorization.
 4. Build the immutable device-token payment route and validate each provider template.
 5. Add unit tests for provider URL/template generation, SMS parsers, transaction deduplication, and permission boundaries.
