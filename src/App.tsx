@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Pay from "./pages/Pay";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
+import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const AppRoutes = () => {
         <Route path="/" element={<AdminLogin />} />
         <Route path="/login" element={<AdminLogin />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/merchant" element={<MerchantDashboard />} />
         <Route path="/admin/login" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -43,6 +45,7 @@ const AppRoutes = () => {
       <Route path="/pay" element={<Pay />} />
       <Route path="/admin" element={<AdminDomainRedirect />} />
       <Route path="/admin/login" element={<AdminDomainRedirect />} />
+      <Route path="/merchant" element={<AdminDomainRedirect />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
