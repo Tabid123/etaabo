@@ -1,3 +1,9 @@
+-- The live project also has a follow-up migration for onboarding. Keeping this
+-- idempotent column guard here lets a clean install create the flag even if
+-- migration history is being reconstructed.
+alter table public.profiles
+  add column if not exists must_change_password boolean not null default false;
+
 -- Merchant admin access: tenant-scoped merchant/payment settings and safe transaction classification.
 create policy "Merchant members can read own merchant profile"
 on public.merchants
