@@ -113,14 +113,10 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
 
   const classify = async (row: TransactionRow, categoryId: string) => {
     setActingId(row.id);
-    const { error } = await supabase
-      .from("financial_transactions")
-      .update({
-        category_id: categoryId,
-        review_state: "classified",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", row.id);
+    const { error } = await supabase.rpc("classify_financial_transaction", {
+      _transaction_id: row.id,
+      _category_id: categoryId,
+    });
 
     setActingId(null);
 
