@@ -27,6 +27,17 @@ type PaymentFormState = {
 
 type PaymentSettings = Record<PaymentProvider, PaymentFormState>;
 
+type MerchantHandoff = {
+  merchantName: string;
+  merchantId: string;
+  adminName: string;
+  adminEmail: string;
+  adminUrl: string;
+  paymentUrl: string;
+  inviteSent: boolean;
+  message: string;
+};
+
 const PAYMENT_OPTIONS: Array<{
   id: PaymentProvider;
   label: string;
@@ -70,6 +81,8 @@ const Admin = () => {
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(emptyPayments());
   const [merchantAdminName, setMerchantAdminName] = useState("");
   const [merchantAdminEmail, setMerchantAdminEmail] = useState("");
+  const [merchantHandoff, setMerchantHandoff] = useState<MerchantHandoff | null>(null);
+  const [handoffOpen, setHandoffOpen] = useState(false);
   const { data: merchantAdminIds = [] } = useQuery({
     queryKey: ["merchant-admin-status"],
     queryFn: async () => {
@@ -311,6 +324,29 @@ const Admin = () => {
     }
   };
 
+  const copyAllDetails = async () => {
+    if (!merchantHandoff) return;
+    const details = [
+      "eTaabo merchant details",
+      `Business: ${merchantHandoff.merchantName}`,
+      `Merchant ID: ${merchantHandoff.merchantId}`,
+      `Admin: ${merchantHandoff.adminName}`,
+      `Email: ${merchantHandoff.adminEmail}`,
+      `Admin login: ${merchantHandoff.adminUrl}`,
+      `Payment page: ${merchantHandoff.paymentUrl}`,
+      merchantHandoff.inviteSent
+        ? "Account setup: Open the secure setup link sent to your email."
+        : "Account setup: Use your existing account to sign in.",
+      merchantHandoff.message,
+    ];
+    try {
+      await navigator.clipboard.writeText(details.join("\\n"));
+      toast.success("All details copied");
+    } catch {
+      toast.error("Copy failed", { description: "Allow clipboard access in the browser." });
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.merchant_id.trim() || !formData.name.trim()) {
       toast.error("Merchant ID iyo Business Name waa required");
@@ -334,6 +370,7 @@ const Admin = () => {
     if (!firstEnabled) return;
 
     setIsSaving(true);
+    let handoffAfterSave: MerchantHandoff | null = null;
 
     try {
       const legacyPhone = firstEnabled.config.phone_number.trim();
@@ -390,11 +427,22 @@ const Admin = () => {
         );
 
         if (invitationError) {
-          throw new Error(`Merchant-ka waa la keydiyay, laakiin Admin-ka lama casuumin: ${invitationError.message}`);
+          throw new Error(`Merchant-ka waa la keydiyay, laakiin Admin account lama diyaarin: ${invitationError.message}`);
         }
         if (invitationData?.error) {
-          throw new Error(`Merchant-ka waa la keydiyay, laakiin Admin-ka lama casuumin: ${invitationData.error}`);
+          throw new Error(`Merchant-ka waa la keydiyay, laakiin Admin account lama diyaarin: ${invitationData.error}`);
         }
+
+        handoffAfterSave = {
+          merchantName: typeof invitationData?.merchant_name === "string" ? invitationData.merchant_name : formData.name.trim(),
+          merchantId: formData.merchant_id.trim(),
+          adminName: typeof invitationData?.admin_name === "string" ? invitationData.admin_name : merchantAdminName.trim(),
+          adminEmail: typeof invitationData?.email === "string" ? invitationData.email : merchantAdminEmail.trim(),
+          adminUrl: typeof invitationData?.admin_url === "string" ? invitationData.admin_url : "https://admin.etaabo.com/",
+          paymentUrl: typeof invitationData?.payment_url === "string" ? invitationData.payment_url : `https://etaabo.com/pay?merchant=${encodeURIComponent(formData.merchant_id.trim())}`,
+          inviteSent: invitationData?.invited === true,
+          message: typeof invitationData?.message === "string" ? invitationData.message : "Admin account is linked to this business.",
+        };
       }
 
       toast.success(wasEditing ? "Merchant waa la cusbooneysiiyay" : "Merchant waa la sameeyay");
@@ -403,6 +451,10 @@ const Admin = () => {
       queryClient.invalidateQueries({ queryKey: ["merchant-payment-methods"] });
       setIsDialogOpen(false);
       resetForm();
+      if (handoffAfterSave) {
+        setMerchantHandoff(handoffAfterSave);
+        setHandoffOpen(true);
+      }
     } catch (error: any) {
       toast.error("Merchant lama keydin", { description: error.message });
     } finally {
@@ -455,6 +507,60 @@ const Admin = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <Dialog
+          open={handoffOpen}
+          onOpenChange={(open) => {
+            setHandoffOpen(open);
+            if (!open) setMerchantHandoff(null);
+          }}
+        >
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Merchant Admin Details</DialogTitle>
+              <DialogDescription>
+                Copy the full handoff and send it to your customer. Account setup is completed through the secure email link.
+              </DialogDescription>
+            </DialogHeader>
+            {merchantHandoff && (
+              <div className="space-y-4">
+                <div className="rounded-xl border p-3 space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Business</span>
+                    <span className="text-right font-medium">{merchantHandoff.merchantName}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Admin</span>
+                    <span className="text-right font-medium">{merchantHandoff.adminName}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Email</Label>
+                    <Input readOnly value={merchantHandoff.adminEmail} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Admin Link</Label>
+                    <Input readOnly value={merchantHandoff.adminUrl} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Payment Page</Label>
+                    <Input readOnly value={merchantHandoff.paymentUrl} />
+                  </div>
+                </div>
+                <p className="rounded-lg bg-secondary p-3 text-sm">
+                  {merchantHandoff.inviteSent
+                    ? "A secure account setup link was sent to the admin email."
+                    : "An existing account was linked. Its sign-in credentials were not changed."}
+                </p>
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <Button variant="outline" onClick={() => setHandoffOpen(false)}>Close</Button>
+                  <Button onClick={() => void copyAllDetails()}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy All Details
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
