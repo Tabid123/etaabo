@@ -1,20 +1,317 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, LogOut, Store, ShieldCheck } from "lucide-react";
+import { CreditCard, Loader2, LogOut, Save, ShieldCheck, Store } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Merchant } from "@/hooks/useMerchant";
+import { DEFAULT_PAYMENT_LOGOS } from "@/lib/paymentLogos";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
+import { toast } from "sonner";
 
 type MerchantAccess = {
   merchant: Merchant;
   role: string;
   branch_id: string | null;
 };
+
+type PaymentProvider = "evc" | "edahab" | "premier";
+type ProviderForm = {
+  enabled: boolean;
+  phone_number: string;
+  ussd_template: string;
+};
+
+type ProviderSettings = Record<PaymentProvider, ProviderForm>;
+
+const PROVIDERS: Array<{ id: PaymentProvider; label: string; logo: string; order: number }> = [
+  { id: "evc", label: "EVC Plus", logo: DEFAULT_PAYMENT_LOGOS.evc, order: 10 },
+  { id: "edahab", label: "eDahab", logo: DEFAULT_PAYMENT_LOGOS.edahab, order: 20 },
+  { id: "premier", label: "Premier Wallet", logo: DEFAULT_PAYMENT_LOGOS.premier, order: 30 },
+];
+
+const emptyProviderSettings = (): ProviderSettings => ({
+  evc: { enabled: false, phone_number: "", ussd_template: "" },
+  edahab: { enabled: false, phone_number: "", ussd_template: "" },
+  premier: { enabled: false, phone_number: "", ussd_template: "" },
+});
+
+function MerchantSettingsPanel({ merchant }: { merchant: Merchant }) {
+  const [businessName, setBusinessName] = useState(merchant.name);
+  const [phoneNumber, setPhoneNumber] = useState(merchant.phone_number);
+  const [currency, setCurrency] = useState(merchant.currency || "USD");
+  const [payments, setPayments] = useState<ProviderSettings>(emptyProviderSettings());
+  const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPayments, setSavingPayments] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setBusinessName(merchant.name);
+    setPhoneNumber(merchant.phone_number);
+    setCurrency(merchant.currency || "USD");
+
+    void supabase
+      .from("merchant_payment_methods")
+      .select("provider,phone_number,ussd_template,is_active")
+      .eq("merchant_id", merchant.id)
+      .in("provider", ["evc", "edahab", "premier"])
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          toast.error("Payment settings lama soo qaadi karin", { description: error.message });
+          setLoading(false);
+          return;
+        }
+        const next = emptyProviderSettings();
+        (data ?? []).forEach((row) => {
+          if (row.provider === "evc" || row.provider === "edahab" || row.provider === "premier") {
+            next[row.provider] = {
+              enabled: row.is_active,
+              phone_number: row.phone_number,
+              ussd_template: row.ussd_template,
+            };
+          }
+        });
+        setPayments(next);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [merchant.id, merchant.name, merchant.phone_number, merchant.currency]);
+
+  const updatePayment = (provider: PaymentProvider, field: keyof ProviderForm, value: string | boolean) => {
+    setPayments((current) => ({
+      ...current,
+      [provider]: { ...current[provider], [field]: value },
+    }));
+  };
+
+  const saveProfile = async () => {
+    if (businessName.trim().length < 2) {
+      toast.error("Magaca ganacsigu waa inuu lahaadaa ugu yaraan 2 xaraf");
+      return;
+    }
+    if (!phoneNumber.trim()) {
+      toast.error("Geli lambarka xiriirka ganacsiga");
+      return;
+    }
+    setSavingProfile(true);
+    const { error } = await supabase
+      .from("merchants")
+      .update({
+        name: businessName.trim(),
+        phone_number: phoneNumber.trim(),
+        currency: currency.trim() || "USD",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", merchant.id);
+    setSavingProfile(false);
+    if (error) {
+      toast.error("Xogta ganacsiga lama keydin", { description: error.message });
+      return;
+    }
+    toast.success("Xogta ganacsiga waa la keydiyay");
+  };
+
+  const savePayments = async () => {
+    const enabled = PROVIDERS.filter((provider) => payments[provider.id].enabled);
+    if (enabled.length === 0) {
+      toast.error("Ugu yaraan hal payment provider shid");
+      return;
+    }
+    for (const provider of enabled) {
+      const config = payments[provider.id];
+      if (!config.phone_number.trim() || !config.ussd_template.trim()) {
+        toast.error(`${provider.label}: geli receiving number-ka iyo USSD template-ka`);
+        return;
+      }
+      if (!config.ussd_template.includes("{phone}") || !config.ussd_template.includes("{amount}")) {
+        toast.error(`${provider.label}: template-ku waa inuu leeyahay {phone} iyo {amount}`);
+        return;
+      }
+    }
+
+    setSavingPayments(true);
+    try {
+      const { data: existing, error: loadError } = await supabase
+        .from("merchant_payment_methods")
+        .select("id,provider")
+        .eq("merchant_id", merchant.id)
+        .in("provider", ["evc", "edahab", "premier"]);
+      if (loadError) throw loadError;
+
+      for (const provider of PROVIDERS) {
+        const config = payments[provider.id];
+        const row = existing?.find((item) => item.provider === provider.id);
+        if (config.enabled) {
+          const payload = {
+            merchant_id: merchant.id,
+            provider: provider.id,
+            label: provider.label,
+            phone_number: config.phone_number.trim(),
+            ussd_template: config.ussd_template.trim(),
+            logo_url: provider.logo,
+            is_active: true,
+            sort_order: provider.order,
+            updated_at: new Date().toISOString(),
+          };
+          const result = row
+            ? await supabase.from("merchant_payment_methods").update(payload).eq("id", row.id)
+            : await supabase.from("merchant_payment_methods").insert(payload);
+          if (result.error) throw result.error;
+        } else if (row) {
+          const { error } = await supabase
+            .from("merchant_payment_methods")
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq("id", row.id);
+          if (error) throw error;
+        }
+      }
+      toast.success("Payment settings waa la keydiyay");
+    } catch (error) {
+      toast.error("Payment settings lama keydin", {
+        description: error instanceof Error ? error.message : "Isku day mar kale.",
+      });
+    } finally {
+      setSavingPayments(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Store className="h-5 w-5 text-primary" />
+          {merchant.name} — Settings
+        </CardTitle>
+        <CardDescription>
+          Waxaad wax ka beddeli kartaa ganacsigan iyo payment providers-kiisa oo keliya.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <h3 className="font-semibold">Xogta Ganacsiga</h3>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor={`business-name-${merchant.id}`}>Magaca</Label>
+              <Input
+                id={`business-name-${merchant.id}`}
+                value={businessName}
+                onChange={(event) => setBusinessName(event.target.value)}
+                maxLength={120}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`business-phone-${merchant.id}`}>Lambarka xiriirka</Label>
+              <Input
+                id={`business-phone-${merchant.id}`}
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                maxLength={32}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`business-currency-${merchant.id}`}>Currency</Label>
+              <Input
+                id={`business-currency-${merchant.id}`}
+                value={currency}
+                onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+                maxLength={8}
+              />
+            </div>
+          </div>
+          <Button onClick={() => void saveProfile()} disabled={savingProfile}>
+            {savingProfile ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Keydi xogta
+          </Button>
+        </div>
+
+        <div className="border-t pt-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="font-semibold">Payment Providers</h3>
+              <p className="text-xs text-muted-foreground">
+                Provider kasta wuxuu leeyahay receiving number iyo USSD template u gaar ah.
+              </p>
+            </div>
+          </div>
+          {loading ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {PROVIDERS.map((provider) => {
+                const config = payments[provider.id];
+                return (
+                  <div key={provider.id} className="rounded-xl border p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-16 items-center justify-center rounded-lg border bg-white p-2">
+                          <img src={provider.logo} alt={provider.label} className="max-h-full max-w-full object-contain" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{provider.label}</p>
+                          <p className="text-xs text-muted-foreground">{config.enabled ? "Enabled" : "Disabled"}</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={config.enabled}
+                        onCheckedChange={(checked) => updatePayment(provider.id, "enabled", checked)}
+                        aria-label={`Enable ${provider.label}`}
+                      />
+                    </div>
+                    {config.enabled && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor={`${provider.id}-number-${merchant.id}`}>Receiving Number</Label>
+                          <Input
+                            id={`${provider.id}-number-${merchant.id}`}
+                            value={config.phone_number}
+                            onChange={(event) => updatePayment(provider.id, "phone_number", event.target.value)}
+                            placeholder="61XXXXXXX"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`${provider.id}-ussd-${merchant.id}`}>USSD Template</Label>
+                          <Input
+                            id={`${provider.id}-ussd-${merchant.id}`}
+                            value={config.ussd_template}
+                            onChange={(event) => updatePayment(provider.id, "ussd_template", event.target.value)}
+                            placeholder="*712*{phone}*{amount}#"
+                            className="font-mono"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Ku dar {"{phone}"} iyo {"{amount}"} meesha ay gelayaan.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <Button onClick={() => void savePayments()} disabled={loading || savingPayments}>
+            {savingPayments ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Keydi payment settings
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 const MerchantDashboard = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -157,13 +454,15 @@ const MerchantDashboard = () => {
                           {merchant.is_active ? "Active" : "Inactive"}
                         </span>
                       </div>
-                      <div className="pt-2 text-xs text-muted-foreground">
-                        Payment links and transaction records remain scoped to your assigned merchant access.
-                      </div>
                     </CardContent>
                   </Card>
                 );
               })}
+            </div>
+            <div className="space-y-6">
+              {merchants.map((merchant) => (
+                <MerchantSettingsPanel key={merchant.id} merchant={merchant} />
+              ))}
             </div>
             <PaymentSessionsPanel merchants={merchants} />
             <FinancialTransactionsPanel merchants={merchants} />
