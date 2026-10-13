@@ -202,6 +202,7 @@ export type Database = {
           merchant_id?: string
           message_excerpt?: string | null
           note?: string | null
+          sms_body?: string | null
           occurred_at?: string
           provider?: string
           review_state?: string
