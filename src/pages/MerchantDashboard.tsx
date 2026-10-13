@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Merchant } from "@/hooks/useMerchant";
 import { DEFAULT_PAYMENT_LOGOS } from "@/lib/paymentLogos";
+import { validateUssdTemplate } from "@/lib/paymentTemplates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -135,8 +136,13 @@ function MerchantSettingsPanel({ merchant }: { merchant: Merchant }) {
         toast.error(`${provider.label}: geli receiving number-ka iyo USSD template-ka`);
         return;
       }
-      if (!config.ussd_template.includes("{phone}") || !config.ussd_template.includes("{amount}")) {
-        toast.error(`${provider.label}: template-ku waa inuu leeyahay {phone} iyo {amount}`);
+      if (!/^\+?\d{6,20}$/.test(config.phone_number.trim())) {
+        toast.error(`${provider.label}: receiving number-ku ma saxna`);
+        return;
+      }
+      const templateError = validateUssdTemplate(config.ussd_template);
+      if (templateError) {
+        toast.error(`${provider.label}: ${templateError}`);
         return;
       }
     }
