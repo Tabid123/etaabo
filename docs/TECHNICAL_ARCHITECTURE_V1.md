@@ -23,6 +23,9 @@ Recent implementation work:
 - Merchant credential handoff now points to `https://merchant.etaabo.com/`; the public payment link remains on `https://etaabo.com/pay?merchant=...`.
 - Merchant Admin dashboard now provides tenant-scoped business profile fields (name, contact number, currency) and EVC Plus/eDahab/Premier receiving-number + USSD-template settings, protected by merchant-manager RLS policies.
 - Added `classify_financial_transaction` RPC so outgoing transaction classification requires platform admin or merchant manager authorization and cannot be used to mark incoming transactions as classified.
+- Added `resolve_public_device(_token)` and `/p/:deviceToken`. Every device receives an immutable random public token; the route resolves only active devices tied to an active merchant and branch. Payment sessions now record the resolved `device_id` and `branch_id`.
+- Added `DevicesPanel` to the Super Admin and Merchant Admin dashboards to create devices for Table Mini, Counter Stand, and Mobile Card, copy unique public URLs, and revoke lost devices without reusing their token.
+- Hardened public payment-session insertion using the `is_active_payment_target` SECURITY DEFINER check so anonymous sessions can only point to an active merchant, valid branch, and active non-revoked device that belongs to that merchant/branch.
 - Updated Payment Sessions UI to use protected RPCs instead of writing confirmation fields from the browser.
 - Corrected Money In/Out UI so categorizing an outgoing transaction changes `review_state`, not provider `verification_state`; categorization is not treated as proof of payment.
 - Fixed Tap2Pay to use only explicitly configured active payment methods; removed the silent legacy EVC fallback so a missing provider configuration cannot route a payment to an unintended number.
@@ -86,8 +89,8 @@ Not yet verified complete: invited-user journey end-to-end (including Supabase A
 1. Inspect and reconcile existing Supabase schema with the actual app hooks and components.
 2. Audit and test existing schema/RLS for branch/device/membership/SMS-reader/loyalty models; add any missing migration history and tenant tests.
 3. Create the first Auth admin securely and test authorization.
-4. Build the immutable device-token payment route and validate each provider template.
-5. Add unit tests for provider URL/template generation, SMS parsers, transaction deduplication, and permission boundaries.
+4. Extend and test the immutable device-token route end-to-end on the custom domain, including revoked-token rejection and NFC/QR equivalence.
+5. Add unit tests for SMS parsers, transaction deduplication, and tenant permission boundaries.
 6. Implement Android SMS Reader pairing, financial-only parsing, offline queue and retry-safe sync.
 7. Run build/lint/tests and end-to-end tests against the owned Supabase project.
 8. Export/import any required old data, configure Cloudflare deployment, verify production URLs, then disconnect Lovable hosting/backend.
