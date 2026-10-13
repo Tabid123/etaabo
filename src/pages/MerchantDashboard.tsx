@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import DevicesPanel from "@/components/admin/DevicesPanel";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
 import { toast } from "sonner";
@@ -472,6 +473,7 @@ const MerchantDashboard = () => {
                 <MerchantSettingsPanel key={merchant.id} merchant={merchant} />
               ))}
             </div>
+            <DevicesPanel merchants={merchants} />
             <PaymentSessionsPanel merchants={merchants} />
             <FinancialTransactionsPanel merchants={merchants} />
           </>
