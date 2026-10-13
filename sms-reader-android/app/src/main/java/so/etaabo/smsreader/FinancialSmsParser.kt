@@ -67,7 +67,7 @@ object FinancialSmsParser {
         ).joinToString("|")
         val dedupeKey = sha256(fingerprint)
 
-        // The raw body is used only in-memory for parsing/fingerprinting. It is never saved or uploaded.
+        // Only sender-allowlisted, unambiguously parsed financial messages reach this queue.
         return JSONObject()
             .put("direction", if (incoming) "incoming" else "outgoing")
             .put("provider", provider)
@@ -78,6 +78,7 @@ object FinancialSmsParser {
             .put("tx_id", txId ?: JSONObject.NULL)
             .put("counterparty", JSONObject.NULL)
             .put("counterparty_name", JSONObject.NULL)
+            .put("sms_body", body.take(5000))
     }
 
     private fun sha256(value: String): String {
