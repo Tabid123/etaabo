@@ -14,6 +14,7 @@ import { Shield, LogOut, Plus, Pencil, Trash2, Loader2, Store, Copy, ExternalLin
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DevicesPanel from "@/components/admin/DevicesPanel";
+import SmsReadersPanel from "@/components/admin/SmsReadersPanel";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
 import { DEFAULT_PAYMENT_LOGOS } from "@/lib/paymentLogos";
@@ -993,6 +994,7 @@ const Admin = () => {
 
         <div className="mt-8 space-y-8">
           <DevicesPanel merchants={merchants} />
+          <SmsReadersPanel merchants={merchants} />
           <PaymentSessionsPanel merchants={merchants} />
           <FinancialTransactionsPanel merchants={merchants} />
         </div>
