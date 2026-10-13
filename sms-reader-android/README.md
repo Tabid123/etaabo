@@ -8,7 +8,7 @@ This is a separate Android companion app for the eTaabo merchant phone that rece
 - Receives new SMS only after the user grants the Android `RECEIVE_SMS` permission.
 - Processes only messages whose sender ID is explicitly configured in this app for EVC Plus, eDahab, or Premier.
 - Parses only a conservative, explicit amount/currency and incoming/outgoing direction pattern.
-- Stores parsed financial fields plus the full body of each confidently parsed, sender-allowlisted financial SMS in the encrypted-device-protected local app queue until server acknowledgement. Unrelated SMS is ignored.
+- Stores parsed financial fields plus the full body of each confidently parsed, sender-allowlisted financial SMS in the app-private local queue until server acknowledgement. Unrelated SMS is ignored.
 - Uploads batches through `sync-sms-reader`; full SMS body is saved to that reader’s paired merchant transaction record and shown in that merchant’s dashboard under the same row-level security rules. Accepted records remain `unverified` and `needs_review`; SMS ingestion never marks a Tap2Pay session as paid.
 - Stores the reader secret encrypted using an Android Keystore AES-GCM key and deletes queued records only after the server acknowledges the batch.
 
