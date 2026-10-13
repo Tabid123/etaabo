@@ -15,6 +15,8 @@ describe("validateUssdTemplate", () => {
     expect(validateUssdTemplate("*712*{phone}*{value}#")).toContain("placeholder");
     expect(validateUssdTemplate("712*{phone}*{amount}#")).toContain("ku bilowdaa");
     expect(validateUssdTemplate("*712*{phone}*{amount}")).toContain("kuna dhammaadaa");
+    expect(validateUssdTemplate("*712#{phone}*{amount}#")).toContain("xarfo aan la oggolayn");
+    expect(validateUssdTemplate("*712*{phone}*{phone}*{amount}#")).toContain("hal mar ku jira {phone}");
   });
 });
 
