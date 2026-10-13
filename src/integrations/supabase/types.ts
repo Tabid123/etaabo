@@ -771,6 +771,16 @@ export type Database = {
         Args: { _branch_id?: string; _merchant_id: string }
         Returns: boolean
       }
+      resolve_public_device: {
+        Args: { _token: string }
+        Returns: {
+          branch_id: string
+          device_id: string
+          device_label: string
+          device_type: string
+          merchant_key: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
