@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
             SecureStore.getReaderId(this) != null -> "Reader paired: ${SecureStore.getReaderId(this)}"
             else -> "Marka hore ku gal akoonka ganacsadaha, kadib geli pairing code-ka dashboard-ka."
         }
+        SyncScheduler.scheduleHeartbeat(this)
         refreshPendingCount()
     }
 
