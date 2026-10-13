@@ -27,7 +27,7 @@ object PairingApi {
             val body = JSONObject()
                 .put("pairing_code", code.trim().uppercase())
                 .put("app_version", BuildConfig.VERSION_NAME)
-                .put("sim_last4", simLast4.trim().ifBlank { JSONObject.NULL })
+                .put("sim_last4", simLast4.trim().let { if (it.isBlank()) JSONObject.NULL else it })
             connection.outputStream.bufferedWriter(Charsets.UTF_8).use { it.write(body.toString()) }
 
             val status = connection.responseCode
