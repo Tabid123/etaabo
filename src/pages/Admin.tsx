@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
 import { DEFAULT_PAYMENT_LOGOS } from "@/lib/paymentLogos";
+import { validateUssdTemplate } from "@/lib/paymentTemplates";
 
 type PaymentProvider = "evc" | "edahab" | "premier";
 
@@ -285,8 +286,13 @@ const Admin = () => {
         toast.error(`${option.label}: geli number-ka iyo USSD code-ka`);
         return false;
       }
-      if (!payment.ussd_template.includes("{phone}") || !payment.ussd_template.includes("{amount}")) {
-        toast.error(`${option.label}: USSD-ga waa inuu leeyahay {phone} iyo {amount}`);
+      if (!/^\+?\d{6,20}$/.test(payment.phone_number.trim())) {
+        toast.error(`${option.label}: lambarka provider-ku ma saxna`);
+        return false;
+      }
+      const templateError = validateUssdTemplate(payment.ussd_template);
+      if (templateError) {
+        toast.error(`${option.label}: ${templateError}`);
         return false;
       }
     }
