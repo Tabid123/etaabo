@@ -52,7 +52,9 @@ class SyncWorker(
                 status in 200..299 -> {
                     ReaderStore.get(applicationContext).deleteUploaded(queue.map { it.id })
                     if (ReaderStore.get(applicationContext).pendingCount() > 0) {
-                        SyncScheduler.enqueue(applicationContext)
+                        // Append after this worker finishes; KEEP would drop a follow-up
+                        // while the current unique-work item is still running.
+                        SyncScheduler.enqueueFollowUp(applicationContext)
                     }
                     Result.success()
                 }
