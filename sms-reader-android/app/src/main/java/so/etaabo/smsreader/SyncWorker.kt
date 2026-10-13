@@ -22,7 +22,10 @@ class SyncWorker(
         }
 
         val queue = ReaderStore.get(applicationContext).pendingBatch(100)
-        if (queue.isEmpty()) return@withContext Result.success()
+        if (queue.isEmpty()) {
+            ReaderHeartbeatApi.ping(applicationContext)
+            return@withContext Result.success()
+        }
 
         var connection: HttpURLConnection? = null
         try {
@@ -51,9 +54,8 @@ class SyncWorker(
             when {
                 status in 200..299 -> {
                     ReaderStore.get(applicationContext).deleteUploaded(queue.map { it.id })
+                    ReaderHeartbeatApi.ping(applicationContext)
                     if (ReaderStore.get(applicationContext).pendingCount() > 0) {
-                        // Append after this worker finishes; KEEP would drop a follow-up
-                        // while the current unique-work item is still running.
                         SyncScheduler.enqueueFollowUp(applicationContext)
                     }
                     Result.success()
