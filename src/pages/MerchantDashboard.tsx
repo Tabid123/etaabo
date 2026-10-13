@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import DevicesPanel from "@/components/admin/DevicesPanel";
+import SmsReadersPanel from "@/components/admin/SmsReadersPanel";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
 import { toast } from "sonner";
@@ -474,6 +475,7 @@ const MerchantDashboard = () => {
               ))}
             </div>
             <DevicesPanel merchants={merchants} />
+            <SmsReadersPanel merchants={merchants} />
             <PaymentSessionsPanel merchants={merchants} />
             <FinancialTransactionsPanel merchants={merchants} />
           </>
