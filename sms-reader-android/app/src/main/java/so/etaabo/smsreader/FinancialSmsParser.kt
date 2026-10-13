@@ -7,7 +7,7 @@ import java.util.Locale
 
 object FinancialSmsParser {
     private val amountPattern = Regex(
-        """(?i)(?:\b(USD|SOS)\b|\$)\s*([0-9]{1,7}(?:[.,][0-9]{1,2})?)(?![0-9.,])|([0-9]{1,7}(?:[.,][0-9]{1,2})?)(?![0-9.,])\s*\b(USD|SOS)\b"""
+        """(?i)(?:\b(USD|SOS)\b|[$])\s*([0-9]{1,7}(?:[.,][0-9]{1,2})?)(?![0-9.,])|([0-9]{1,7}(?:[.,][0-9]{1,2})?)(?![0-9.,])\s*\b(USD|SOS)\b"""
     )
     private val transactionIdPattern = Regex(
         """(?i)\b(?:txn|transaction\s*id|reference|ref|trx)\s*[:#-]?\s*([A-Za-z0-9_-]{4,100})"""
