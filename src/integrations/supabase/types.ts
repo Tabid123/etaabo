@@ -755,6 +755,20 @@ export type Database = {
         Args: { _category_id: string; _transaction_id: string }
         Returns: undefined
       }
+      complete_sms_reader_pairing: {
+        Args: {
+          _app_version: string
+          _device_secret_hash: string
+          _pairing_code_hash: string
+          _sim_last4: string
+        }
+        Returns: {
+          branch_id: string
+          merchant_id: string
+          reader_id: string
+          reader_label: string
+        }[]
+      }
       confirm_payment_session: {
         Args: { _session_id: string }
         Returns: undefined
@@ -766,10 +780,33 @@ export type Database = {
         }
         Returns: boolean
       }
+      ingest_sms_reader_batch: {
+        Args: {
+          _app_version: string
+          _device_secret_hash: string
+          _events: Json
+        }
+        Returns: number
+      }
       is_merchant_manager: { Args: { _merchant_id: string }; Returns: boolean }
       is_merchant_member: {
         Args: { _branch_id?: string; _merchant_id: string }
         Returns: boolean
+      }
+      register_sms_reader_pairing: {
+        Args: {
+          _branch_id: string
+          _expires_at: string
+          _label: string
+          _merchant_id: string
+          _pairing_code_hash: string
+          _requested_by: string
+        }
+        Returns: {
+          expires_at: string
+          reader_id: string
+          reader_label: string
+        }[]
       }
       resolve_public_device: {
         Args: { _token: string }
