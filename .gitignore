@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 .wrangler
 .dev.vars*
+
+# Standalone Android build outputs and local Supabase configuration
+sms-reader-android/local.properties
+sms-reader-android/.gradle/
+sms-reader-android/**/build/
