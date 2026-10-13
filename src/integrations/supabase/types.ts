@@ -153,6 +153,7 @@ export type Database = {
           id: string
           merchant_id: string
           message_excerpt: string | null
+          sms_body: string | null
           note: string | null
           occurred_at: string
           provider: string
@@ -176,6 +177,7 @@ export type Database = {
           id?: string
           merchant_id: string
           message_excerpt?: string | null
+          sms_body?: string | null
           note?: string | null
           occurred_at?: string
           provider: string
