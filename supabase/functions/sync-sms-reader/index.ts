@@ -32,6 +32,7 @@ function normalizeEvent(event: unknown): Record<string, unknown> | null {
   const counterparty = value.counterparty === null || value.counterparty === undefined || value.counterparty === ""
     ? null
     : typeof value.counterparty === "string" ? value.counterparty.trim() : "__invalid__";
+  const smsBody = typeof value.sms_body === "string" ? value.sms_body : "";
   const counterpartyName = value.counterparty_name === null || value.counterparty_name === undefined || value.counterparty_name === ""
     ? null
     : typeof value.counterparty_name === "string"
@@ -47,8 +48,9 @@ function normalizeEvent(event: unknown): Record<string, unknown> | null {
   if (txId === "__invalid__" || (txId !== null && !/^[A-Za-z0-9_-]{1,100}$/.test(txId))) return null;
   if (counterparty === "__invalid__" || (counterparty !== null && !/^\+?[0-9*# -]{6,24}$/.test(counterparty))) return null;
   if (counterpartyName === "__invalid__") return null;
+  if (smsBody.length > 5000 || smsBody.includes("\u0000")) return null;
 
-  // Accept parsed fields only; raw SMS text/excerpts are deliberately not forwarded.
+  // Full body is accepted only alongside a validated, allowlisted financial event; the server binds it to the paired reader merchant.
   return {
     direction,
     provider,
@@ -59,6 +61,7 @@ function normalizeEvent(event: unknown): Record<string, unknown> | null {
     tx_id: txId,
     counterparty,
     counterparty_name: counterpartyName,
+    sms_body: smsBody,
   };
 }
 
@@ -86,7 +89,7 @@ Deno.serve(async (req: Request) => {
 
     const normalized = events.map(normalizeEvent);
     if (normalized.some((event) => event === null)) {
-      return respond(400, { error: "Batch contains an invalid event. Send parsed financial fields only, not raw SMS text." });
+      return respond(400, { error: "Batch contains an invalid event. Send valid parsed financial events and an SMS body no longer than 5000 characters." });
     }
 
     const secretHash = await sha256(`etaabo-sms-reader-v1:${rawSecret}`);
