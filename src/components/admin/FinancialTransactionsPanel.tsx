@@ -20,6 +20,7 @@ type TransactionRow = {
   verification_state: string;
   review_state: string;
   category_id: string | null;
+  sms_body: string | null;
 };
 
 type CategoryRow = {
@@ -59,7 +60,7 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
 
     let txQuery = supabase
       .from("financial_transactions")
-      .select("id,merchant_id,direction,provider,amount,currency,counterparty,tx_id,occurred_at,verification_state,review_state,category_id")
+      .select("id,merchant_id,direction,provider,amount,currency,counterparty,tx_id,occurred_at,verification_state,review_state,category_id,sms_body")
       .order("occurred_at", { ascending: false })
       .limit(100);
 
@@ -223,6 +224,7 @@ export default function FinancialTransactionsPanel({ merchants }: { merchants: M
                         {row.counterparty || "—"} {row.tx_id ? `• TX ${row.tx_id}` : ""}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">{new Date(row.occurred_at).toLocaleString()}</p>
+                      {row.sms_body && <details className="mt-2 max-w-2xl rounded-lg border bg-muted/30 p-3 text-sm"><summary className="cursor-pointer font-medium">Eeg SMS body-ga buuxa</summary><p className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed">{row.sms_body}</p></details>}
                     </div>
                   </div>
 
