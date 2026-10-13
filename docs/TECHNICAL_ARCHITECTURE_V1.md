@@ -25,6 +25,9 @@ Recent implementation work:
 - Added `classify_financial_transaction` RPC so outgoing transaction classification requires platform admin or merchant manager authorization and cannot be used to mark incoming transactions as classified.
 - Updated Payment Sessions UI to use protected RPCs instead of writing confirmation fields from the browser.
 - Corrected Money In/Out UI so categorizing an outgoing transaction changes `review_state`, not provider `verification_state`; categorization is not treated as proof of payment.
+- Fixed Tap2Pay to use only explicitly configured active payment methods; removed the silent legacy EVC fallback so a missing provider configuration cannot route a payment to an unintended number.
+- Added strict validation for provider receiving numbers, exactly one `{phone}` and `{amount}` placeholder, USSD wrapper characters, and the maximum session amount before creating a payment session. The selected provider template is used without changing its placeholder order.
+- Encodes `#` in the `tel:` URI so the USSD terminator is not parsed as a URL fragment; added unit tests for template validation, provider-specific substitution, maximum amount, and safe dialer link generation.
 
 Not yet verified complete: invited-user journey end-to-end (including Supabase Auth redirect allow-list), first platform-admin bootstrap, branch-level cashier UI/permissions, immutable device-token public route, SMS Reader pairing/parsing/sync, old backend data migration, production deployment cutover, and a passing build/unit/end-to-end test run.
 
