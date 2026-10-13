@@ -8,6 +8,9 @@ import { buildUssdCode, MAX_PAYMENT_AMOUNT, toUssdTelHref, validateUssdTemplate 
 interface PaymentCardProps {
   merchant: Merchant | null;
   paymentMethods: MerchantPaymentMethod[];
+  deviceId?: string | null;
+  branchId?: string | null;
+  deviceLabel?: string | null;
   isLoading: boolean;
   error: Error | null;
   noMerchantParam?: boolean;
@@ -18,6 +21,9 @@ type ActivePaymentMethod = MerchantPaymentMethod;
 const PaymentCard = ({
   merchant,
   paymentMethods,
+  deviceId = null,
+  branchId = null,
+  deviceLabel = null,
   isLoading,
   error,
   noMerchantParam,
@@ -100,6 +106,8 @@ const PaymentCard = ({
         .insert({
           merchant_id: merchant.id,
           payment_method_id: selectedMethod.id,
+          branch_id: branchId,
+          device_id: deviceId,
           provider: selectedMethod.provider,
           amount: numericAmount,
           currency: merchant.currency,
@@ -204,6 +212,11 @@ const PaymentCard = ({
         <p className="text-center text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase mt-2">
           Payment
         </p>
+        {deviceLabel && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            {deviceLabel}
+          </p>
+        )}
 
         <div className="mt-10 flex items-baseline justify-center gap-2">
           <span className="text-3xl font-bold text-muted-foreground">$</span>
