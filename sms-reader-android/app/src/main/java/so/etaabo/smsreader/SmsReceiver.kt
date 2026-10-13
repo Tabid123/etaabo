@@ -27,7 +27,7 @@ class SmsReceiver : BroadcastReceiver() {
                     configuredSenderIds = AppPreferences.getSenderIds(context)
                 ) ?: return@Thread
 
-                // Only parsed financial fields are persisted. Raw SMS body is not logged or saved.
+                // Only allowlisted and confidently parsed financial SMS is queued, including its body for the merchant audit log.
                 ReaderStore.get(context).enqueue(event)
                 SyncScheduler.enqueue(context)
             } catch (_: Exception) {
