@@ -10,18 +10,31 @@ import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 
 object SyncScheduler {
+    private const val WORK_NAME = "etaabo-sms-reader-sync"
+
+    private fun createWork() = OneTimeWorkRequestBuilder<SyncWorker>()
+        .setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+        )
+        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+        .build()
+
     fun enqueue(context: Context) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val work = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setConstraints(constraints)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-            .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
-            "etaabo-sms-reader-sync",
+            WORK_NAME,
             ExistingWorkPolicy.KEEP,
-            work
+            createWork()
+        )
+    }
+
+    /** Called by an active worker when another batch is waiting. */
+    fun enqueueFollowUp(context: Context) {
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            WORK_NAME,
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
+            createWork()
         )
     }
 }
