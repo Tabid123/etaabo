@@ -8,8 +8,8 @@ This is a separate Android companion app for the eTaabo merchant phone that rece
 - Receives new SMS only after the user grants the Android `RECEIVE_SMS` permission.
 - Processes only messages whose sender ID is explicitly configured in this app for EVC Plus, eDahab, or Premier.
 - Parses only a conservative, explicit amount/currency and incoming/outgoing direction pattern.
-- Stores parsed financial fields in a local offline queue. It does not persist or upload raw SMS text.
-- Uploads batches through the deployed `sync-sms-reader` Edge Function. Accepted records remain `unverified` and `needs_review`; SMS ingestion never marks a Tap2Pay session as paid.
+- Stores parsed financial fields plus the full body of each confidently parsed, sender-allowlisted financial SMS in the encrypted-device-protected local app queue until server acknowledgement. Unrelated SMS is ignored.
+- Uploads batches through `sync-sms-reader`; full SMS body is saved to that reader’s paired merchant transaction record and shown in that merchant’s dashboard under the same row-level security rules. Accepted records remain `unverified` and `needs_review`; SMS ingestion never marks a Tap2Pay session as paid.
 - Stores the reader secret encrypted using an Android Keystore AES-GCM key and deletes queued records only after the server acknowledges the batch.
 
 ## Configure the public Supabase client key
@@ -34,7 +34,7 @@ gradle :app:testDebugUnitTest
 
 ## Important parser and release notes
 
-Provider SMS formats and sender IDs must be verified against redacted examples from real EVC Plus, eDahab, and Premier notifications. Until a sender ID is configured and a message has exactly one unambiguous amount with an explicit USD/SOS currency plus a clear direction, the parser ignores it. This is intentional to avoid ingesting unrelated personal SMS or misclassifying transfers.
+Provider SMS formats and sender IDs must be verified against redacted examples from real EVC Plus, eDahab, and Premier notifications. Until a sender ID is configured and a message has exactly one unambiguous amount with an explicit USD/SOS currency plus a clear direction, the parser ignores it. Only those accepted financial messages have their full body uploaded; unrelated personal SMS is not queued or uploaded.
 
 Before production release, complete device tests for multi-part SMS, actual provider message formats, dual-SIM phones, Android background restrictions, offline retries, pairing expiry/reuse, and device revocation. Google Play treats SMS permissions as sensitive and can require a permissions declaration and approval; review the permitted-use policy before publishing. Permission consent and a visible privacy disclosure must remain prominent.
 
