@@ -11,7 +11,7 @@ export function validateUssdTemplate(template: string): string | null {
   if (!value.startsWith("*") || !value.endsWith("#")) {
     return "USSD template-ku waa inuu ku bilowdaa * kuna dhammaadaa #.";
   }
-  if (!/^\*[A-Za-z0-9*{}+#.]+#$/.test(value)) {
+  if (!/^\*[A-Za-z0-9*{}+.]+#$/.test(value)) {
     return "USSD template-ku wuxuu leeyahay xarfo aan la oggolayn.";
   }
 
