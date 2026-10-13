@@ -25,6 +25,9 @@ Recent implementation work:
 - Added `classify_financial_transaction` RPC so outgoing transaction classification requires platform admin or merchant manager authorization and cannot be used to mark incoming transactions as classified.
 - Added `resolve_public_device(_token)` and `/p/:deviceToken`. Every device receives an immutable random public token; the route resolves only active devices tied to an active merchant and branch. Payment sessions now record the resolved `device_id` and `branch_id`.
 - Added `DevicesPanel` to the Super Admin and Merchant Admin dashboards to create devices for Table Mini, Counter Stand, and Mobile Card, copy unique public URLs, and revoke lost devices without reusing their token.
+- Moved token lookup table access into `private.resolve_public_device` behind a public `SECURITY INVOKER` RPC wrapper, so the NFC/QR public resolver itself is no longer a public `SECURITY DEFINER` endpoint.
+- Added `SmsReadersPanel` to both admin portals. A permitted manager can create a reader pairing code valid for 10 minutes and revoke paired readers. Pairing codes and the 256-bit reader secret are stored only as SHA-256 hashes; the reader secret is returned to the phone once.
+- Deployed Edge Functions `create-sms-reader-pairing` (JWT-protected), `pair-sms-reader` (single-use pairing code), and `sync-sms-reader` (custom reader secret). Sync accepts at most 100 validated parsed financial events, attributes them to the reader's stored merchant/branch, deduplicates retries, never stores raw SMS text, and keeps transactions `unverified` / `needs_review`.
 - Hardened public payment-session insertion using the `is_active_payment_target` SECURITY DEFINER check so anonymous sessions can only point to an active merchant, valid branch, and active non-revoked device that belongs to that merchant/branch.
 - Updated Payment Sessions UI to use protected RPCs instead of writing confirmation fields from the browser.
 - Corrected Money In/Out UI so categorizing an outgoing transaction changes `review_state`, not provider `verification_state`; categorization is not treated as proof of payment.
@@ -32,7 +35,7 @@ Recent implementation work:
 - Added strict validation for provider receiving numbers, exactly one `{phone}` and `{amount}` placeholder, USSD wrapper characters, and the maximum session amount before creating a payment session. The selected provider template is used without changing its placeholder order.
 - Encodes `#` in the `tel:` URI so the USSD terminator is not parsed as a URL fragment; added unit tests for template validation, provider-specific substitution, maximum amount, and safe dialer link generation.
 
-Not yet verified complete: invited-user journey end-to-end (including Supabase Auth redirect allow-list), first platform-admin bootstrap, branch-level cashier UI/permissions, immutable device-token public route, SMS Reader pairing/parsing/sync, old backend data migration, production deployment cutover, and a passing build/unit/end-to-end test run.
+Not yet complete or verified end-to-end: invited-user journey and Supabase Auth redirect allow-list, first platform-admin bootstrap, branch-level cashier UI/permissions, public device route on the live custom domain, old backend data migration, and production deployment cutover. SMS Reader pairing/sync backend and dashboard controls exist, but the native Android reader app is not yet implemented: Android SMS permissions/consent, provider-specific message parsers, secure local secret storage, encrypted offline queue, retry/backoff, and Android-device end-to-end tests remain.
 
 ## Proposed data model
 
@@ -91,8 +94,8 @@ Not yet verified complete: invited-user journey end-to-end (including Supabase A
 3. Create the first Auth admin securely and test authorization.
 4. Extend and test the immutable device-token route end-to-end on the custom domain, including revoked-token rejection and NFC/QR equivalence.
 5. Add unit tests for SMS parsers, transaction deduplication, and tenant permission boundaries.
-6. Implement Android SMS Reader pairing, financial-only parsing, offline queue and retry-safe sync.
-7. Run build/lint/tests and end-to-end tests against the owned Supabase project.
+6. Build the native Android SMS Reader: permission/consent flow, provider-specific financial-only parsers, encrypted offline queue, Android Keystore secret storage, and retry-safe sync to the deployed Edge Function.
+7. Run Android device tests, RLS/tenant tests, and Tap2Pay plus SMS Reader end-to-end tests against the owned Supabase project.
 8. Export/import any required old data, configure Cloudflare deployment, verify production URLs, then disconnect Lovable hosting/backend.
 
 ## Acceptance criteria
