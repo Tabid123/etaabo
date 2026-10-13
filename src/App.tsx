@@ -86,6 +86,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/pay" element={<Pay />} />
+      <Route path="/p/:deviceToken" element={<Pay />} />
       <Route path="/admin" element={<HostRedirect host={ADMIN_HOST} targetPath="/admin" />} />
       <Route path="/admin/login" element={<HostRedirect host={ADMIN_HOST} targetPath="/login" />} />
       <Route path="/merchant" element={<HostRedirect host={MERCHANT_HOST} targetPath="/merchant" />} />
