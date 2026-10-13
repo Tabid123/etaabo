@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Shield, LogOut, Plus, Pencil, Trash2, Loader2, Store, Copy, ExternalLink, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import DevicesPanel from "@/components/admin/DevicesPanel";
 import PaymentSessionsPanel from "@/components/admin/PaymentSessionsPanel";
 import FinancialTransactionsPanel from "@/components/admin/FinancialTransactionsPanel";
 import { DEFAULT_PAYMENT_LOGOS } from "@/lib/paymentLogos";
@@ -991,6 +992,7 @@ const Admin = () => {
         </Card>
 
         <div className="mt-8 space-y-8">
+          <DevicesPanel merchants={merchants} />
           <PaymentSessionsPanel merchants={merchants} />
           <FinancialTransactionsPanel merchants={merchants} />
         </div>
