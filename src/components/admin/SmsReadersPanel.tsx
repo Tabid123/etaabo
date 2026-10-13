@@ -146,7 +146,7 @@ export default function SmsReadersPanel({ merchants }: { merchants: Merchant[] }
 
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" /> Android SMS Readers</CardTitle>
-        <CardDescription>Reader-ku wuxuu gudbiyaa oo keliya transaction fields la aqoonsaday; raw SMS body lama upload-gareeyo. Xaaladda iyo last seen si toos ah ayaa loo cusboonaysiiyaa.</CardDescription>
+        <CardDescription>Reader-ku wuxuu gudbiyaa transaction fields iyo SMS body-ga buuxa ee farriimaha maaliyadeed ee la aqoonsaday. Body-gu wuxuu ka muuqdaa transaction-ka merchant-ka uu reader-ku ku xiran yahay; SMS-yada kale lama gudbiyo. Xaaladda iyo last seen si toos ah ayaa loo cusboonaysiiyaa.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {merchants.length === 0 ? <p className="text-sm text-muted-foreground">Ganacsade lama helin.</p> : <>
