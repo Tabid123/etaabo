@@ -36,7 +36,7 @@ class FinancialSmsParserTest {
     fun parsesExplicitDollarAmountForOutgoingTransaction() {
         val event: JSONObject? = FinancialSmsParser.parse(
             sender = "EDAHAB",
-            body = "You sent \\$2.00 to another wallet. Ref: XY9876",
+            body = "You sent \$2.00 to another wallet. Ref: XY9876",
             receivedAtMillis = 1797000000100L,
             configuredSenderIds = senders
         )
