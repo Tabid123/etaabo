@@ -7,6 +7,7 @@ object AppPreferences {
     private const val KEY_EVC_SENDER = "sender_evc"
     private const val KEY_EDAHAB_SENDER = "sender_edahab"
     private const val KEY_PREMIER_SENDER = "sender_premier"
+    private const val KEY_MERCHANT_EMAIL = "merchant_email"
 
     fun saveSenderIds(context: Context, evc: String, edahab: String, premier: String) {
         context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
@@ -25,4 +26,13 @@ object AppPreferences {
             "premier" to prefs.getString(KEY_PREMIER_SENDER, "").orEmpty().trim()
         ).filterValues { it.isNotBlank() }
     }
+
+    fun saveMerchantEmail(context: Context, email: String) {
+        context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_MERCHANT_EMAIL, email.trim()).apply()
+    }
+
+    fun getMerchantEmail(context: Context): String =
+        context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
+            .getString(KEY_MERCHANT_EMAIL, "").orEmpty()
 }
