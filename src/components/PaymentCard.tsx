@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Merchant, MerchantPaymentMethod } from "@/hooks/useMerchant";
 import { getPaymentLogo } from "@/lib/paymentLogos";
+import { buildUssdCode, MAX_PAYMENT_AMOUNT, toUssdTelHref, validateUssdTemplate } from "@/lib/paymentTemplates";
 
 interface PaymentCardProps {
   merchant: Merchant | null;
@@ -12,12 +13,7 @@ interface PaymentCardProps {
   noMerchantParam?: boolean;
 }
 
-type ActivePaymentMethod = MerchantPaymentMethod & {
-  isLegacyFallback?: boolean;
-};
-
-const formatAmount = (value: number) =>
-  value % 1 === 0 ? value.toString() : parseFloat(value.toFixed(2)).toString();
+type ActivePaymentMethod = MerchantPaymentMethod;
 
 const PaymentCard = ({
   merchant,
@@ -31,25 +27,9 @@ const PaymentCard = ({
   const [selectedMethodId, setSelectedMethodId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const activeMethods = useMemo<ActivePaymentMethod[]>(() => {
-    if (paymentMethods.length > 0) return paymentMethods;
-    if (!merchant) return [];
-
-    return [
-      {
-        id: "legacy-evc",
-        merchant_id: merchant.id,
-        provider: "evc",
-        label: "EVC Plus",
-        phone_number: merchant.phone_number,
-        ussd_template: `${merchant.ussd_base_code}{phone}*{amount}#`,
-        logo_url: merchant.evc_logo_url,
-        is_active: true,
-        sort_order: 10,
-        isLegacyFallback: true,
-      },
-    ];
-  }, [merchant, paymentMethods]);
+  // Only show providers explicitly configured for this merchant.
+  // Never silently fall back to a generic EVC number or USSD template.
+  const activeMethods: ActivePaymentMethod[] = paymentMethods;
 
   useEffect(() => {
     if (!activeMethods.length) {
@@ -64,6 +44,14 @@ const PaymentCard = ({
 
   const selectedMethod =
     activeMethods.find((method) => method.id === selectedMethodId) ?? activeMethods[0];
+  const selectedMethodConfigError = selectedMethod
+    ? (
+        validateUssdTemplate(selectedMethod.ussd_template) ??
+        (!/^\\+?\\d{6,20}$/.test(selectedMethod.phone_number.trim())
+          ? "Lambarka lacag-qaadashada ee provider-kan ma saxna."
+          : null)
+      )
+    : null;
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -86,6 +74,10 @@ const PaymentCard = ({
       setDialerError("Fadlan geli lacag sax ah");
       return;
     }
+    if (numericAmount > MAX_PAYMENT_AMOUNT) {
+      setDialerError(`Lacagta ugu badan waa ${MAX_PAYMENT_AMOUNT}`);
+      return;
+    }
 
     if (!merchant) {
       setDialerError("Ganacsade lama helin");
@@ -101,24 +93,30 @@ const PaymentCard = ({
     setDialerError(null);
 
     try {
-      if (!selectedMethod.isLegacyFallback) {
-        const { error: sessionError } = await supabase
-          .from("payment_sessions")
-          .insert({
-            merchant_id: merchant.id,
-            payment_method_id: selectedMethod.id,
-            provider: selectedMethod.provider,
-            amount: numericAmount,
-            currency: merchant.currency,
-            status: "initiated",
-            source: "tap2pay",
-          });
+      // Validate and build the selected provider's exact template before
+      // creating a session, so malformed settings do not leave bad sessions.
+      const ussdCode = buildUssdCode(
+        selectedMethod.ussd_template,
+        selectedMethod.phone_number,
+        numericAmount,
+      );
 
-        if (sessionError) throw sessionError;
-      }
+      const { error: sessionError } = await supabase
+        .from("payment_sessions")
+        .insert({
+          merchant_id: merchant.id,
+          payment_method_id: selectedMethod.id,
+          provider: selectedMethod.provider,
+          amount: numericAmount,
+          currency: merchant.currency,
+          status: "initiated",
+          source: "tap2pay",
+        });
 
-      const ussdCode = generateUssdCode(selectedMethod, numericAmount);
-      window.location.href = `tel:${ussdCode}`;
+      if (sessionError) throw sessionError;
+
+      // '#' must be escaped in the tel: URI or it can be parsed as a fragment.
+      window.location.href = toUssdTelHref(ussdCode);
     } catch (submitError: any) {
       console.error("Payment initiation failed:", submitError);
       setDialerError(
@@ -267,8 +265,14 @@ const PaymentCard = ({
           </p>
         )}
 
+        {selectedMethodConfigError && (
+          <p className="mt-5 text-destructive text-sm text-center">
+            Habka {selectedMethod.label} wali si sax ah looma dejin: {selectedMethodConfigError}
+          </p>
+        )}
+
         {dialerError && (
-          <p className="mt-5 text-destructive text-sm text-center">{dialerError}</p>
+          <p className="mt-3 text-destructive text-sm text-center">{dialerError}</p>
         )}
 
         <button
@@ -276,6 +280,7 @@ const PaymentCard = ({
           disabled={
             isSubmitting ||
             !selectedMethod ||
+            Boolean(selectedMethodConfigError) ||
             !amount ||
             !Number.isFinite(parseFloat(amount)) ||
             parseFloat(amount) <= 0
