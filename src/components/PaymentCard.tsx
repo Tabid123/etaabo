@@ -47,7 +47,7 @@ const PaymentCard = ({
   const selectedMethodConfigError = selectedMethod
     ? (
         validateUssdTemplate(selectedMethod.ussd_template) ??
-        (!/^\\+?\\d{6,20}$/.test(selectedMethod.phone_number.trim())
+        (!/^\+?\d{6,20}$/.test(selectedMethod.phone_number.trim())
           ? "Lambarka lacag-qaadashada ee provider-kan ma saxna."
           : null)
       )
@@ -59,12 +59,6 @@ const PaymentCard = ({
       setAmount(value);
       setDialerError(null);
     }
-  };
-
-  const generateUssdCode = (method: ActivePaymentMethod, numericAmount: number) => {
-    return method.ussd_template
-      .replaceAll("{phone}", method.phone_number)
-      .replaceAll("{amount}", formatAmount(numericAmount));
   };
 
   const handleSubmit = async () => {
