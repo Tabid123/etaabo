@@ -244,7 +244,7 @@ class MainActivity : ComponentActivity() {
         AlertDialog.Builder(this)
             .setTitle("Oggolaanshaha SMS")
             .setMessage(
-                "eTaabo wuxuu SMS ka eegi doonaa sender ID-yada aad dejisay oo keliya. Waxa la kaydinayo/la dirayo waa transaction fields la parse-gareeyay; SMS qoraalkiisa oo dhan lama kaydiyo ama lama upload-gareeyo. Farriimaha aan si cad loo aqoonsan karin waa la iska indhatiraa."
+                "eTaabo wuxuu SMS ka eegi doonaa sender ID-yada aad dejisay oo keliya. Waxa la kaydinayo/la dirayo waa transaction fields iyo SMS body-ga buuxa ee farriimaha maaliyadeed ee la aqoonsaday ayaa la kaydiyaa lana diraa. SMS-yada kale lama kaydiyo. Farriimaha aan si cad loo aqoonsan karin waa la iska indhatiraa."
             )
             .setNegativeButton("Jooji", null)
             .setPositiveButton("Sii wad") { _, _ ->
