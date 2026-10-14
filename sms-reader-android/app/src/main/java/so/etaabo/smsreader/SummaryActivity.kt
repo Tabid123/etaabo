@@ -3,6 +3,7 @@ package so.etaabo.smsreader
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
+import android.content.Intent
 import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -62,6 +63,11 @@ class SummaryActivity : ComponentActivity() {
             setOnClickListener { refresh() }
         })
         root.addView(gap(12))
+        root.addView(TextView(this).apply {
+            text = "DEJINTA QALABKA"; textSize = 13f; setTextColor(teal); gravity = Gravity.CENTER
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setOnClickListener { startActivity(Intent(this@SummaryActivity, MainActivity::class.java)) }
+        })
         root.addView(text("SMS body-ga iyo faahfaahinta macaamil kasta ka eeg Merchant Admin-ka.", 12f, muted))
         refresh()
     }
