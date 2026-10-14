@@ -504,6 +504,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          must_change_password: boolean
           updated_at: string
         }
         Insert: {
@@ -511,6 +512,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          must_change_password?: boolean
           updated_at?: string
         }
         Update: {
@@ -518,6 +520,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          must_change_password?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -622,6 +625,10 @@ export type Database = {
     Functions: {
       cancel_payment_session: {
         Args: { _session_id: string }
+        Returns: undefined
+      }
+      classify_financial_transaction: {
+        Args: { _category_id: string; _transaction_id: string }
         Returns: undefined
       }
       confirm_payment_session: {
