@@ -10,39 +10,33 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.18"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
       branches: {
         Row: {
-          address: string | null
           created_at: string
           id: string
           is_active: boolean
           merchant_id: string
           name: string
-          notes: string | null
           updated_at: string
         }
         Insert: {
-          address?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
           merchant_id: string
           name: string
-          notes?: string | null
           updated_at?: string
         }
         Update: {
-          address?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
           merchant_id?: string
           name?: string
-          notes?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -57,7 +51,6 @@ export type Database = {
       }
       devices: {
         Row: {
-          activated_at: string
           branch_id: string | null
           created_at: string
           device_type: string
@@ -70,12 +63,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          activated_at?: string
           branch_id?: string | null
           created_at?: string
-          device_type: string
+          device_type?: string
           id?: string
-          label?: string
+          label: string
           merchant_id: string
           public_token?: string
           revoked_at?: string | null
@@ -83,7 +75,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          activated_at?: string
           branch_id?: string | null
           created_at?: string
           device_type?: string
@@ -97,11 +88,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "devices_branch_id_merchant_id_fkey"
-            columns: ["branch_id", "merchant_id"]
+            foreignKeyName: "devices_branch_id_fkey"
+            columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
-            referencedColumns: ["id", "merchant_id"]
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "devices_merchant_id_fkey"
@@ -125,7 +116,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          kind: string
+          kind?: string
           name: string
           sort_order?: number
         }
@@ -153,11 +144,10 @@ export type Database = {
           id: string
           merchant_id: string
           message_excerpt: string | null
-          sms_body: string | null
-          note: string | null
           occurred_at: string
           provider: string
           review_state: string
+          sms_body: string | null
           sms_reader_id: string | null
           source: string
           tx_id: string | null
@@ -177,11 +167,10 @@ export type Database = {
           id?: string
           merchant_id: string
           message_excerpt?: string | null
-          sms_body?: string | null
-          note?: string | null
           occurred_at?: string
           provider: string
           review_state?: string
+          sms_body?: string | null
           sms_reader_id?: string | null
           source?: string
           tx_id?: string | null
@@ -201,11 +190,10 @@ export type Database = {
           id?: string
           merchant_id?: string
           message_excerpt?: string | null
-          note?: string | null
-          sms_body?: string | null
           occurred_at?: string
           provider?: string
           review_state?: string
+          sms_body?: string | null
           sms_reader_id?: string | null
           source?: string
           tx_id?: string | null
@@ -214,11 +202,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "financial_transactions_branch_merchant_fkey"
-            columns: ["branch_id", "merchant_id"]
+            foreignKeyName: "financial_transactions_branch_id_fkey"
+            columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
-            referencedColumns: ["id", "merchant_id"]
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "financial_transactions_category_id_fkey"
@@ -235,169 +223,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "financial_transactions_reader_merchant_fkey"
-            columns: ["sms_reader_id", "merchant_id"]
+            foreignKeyName: "financial_transactions_sms_reader_id_fkey"
+            columns: ["sms_reader_id"]
             isOneToOne: false
             referencedRelation: "sms_readers"
-            referencedColumns: ["id", "merchant_id"]
-          },
-        ]
-      }
-      loyalty_activity: {
-        Row: {
-          activity_type: string
-          actor_user_id: string | null
-          created_at: string
-          customer_id: string
-          id: string
-          merchant_id: string
-          note: string | null
-          points_delta: number
-          reward_id: string | null
-          stamps_delta: number
-        }
-        Insert: {
-          activity_type: string
-          actor_user_id?: string | null
-          created_at?: string
-          customer_id: string
-          id?: string
-          merchant_id: string
-          note?: string | null
-          points_delta: number
-          reward_id?: string | null
-          stamps_delta?: number
-        }
-        Update: {
-          activity_type?: string
-          actor_user_id?: string | null
-          created_at?: string
-          customer_id?: string
-          id?: string
-          merchant_id?: string
-          note?: string | null
-          points_delta?: number
-          reward_id?: string | null
-          stamps_delta?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "loyalty_activity_customer_id_merchant_id_fkey"
-            columns: ["customer_id", "merchant_id"]
-            isOneToOne: false
-            referencedRelation: "loyalty_customers"
-            referencedColumns: ["id", "merchant_id"]
-          },
-          {
-            foreignKeyName: "loyalty_activity_merchant_id_fkey"
-            columns: ["merchant_id"]
-            isOneToOne: false
-            referencedRelation: "merchants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loyalty_activity_reward_id_merchant_id_fkey"
-            columns: ["reward_id", "merchant_id"]
-            isOneToOne: false
-            referencedRelation: "loyalty_rewards"
-            referencedColumns: ["id", "merchant_id"]
-          },
-        ]
-      }
-      loyalty_customers: {
-        Row: {
-          branch_id: string | null
-          created_at: string
-          customer_code: string
-          full_name: string
-          id: string
-          is_active: boolean
-          merchant_id: string
-          notes: string | null
-          phone_number: string | null
-          points_balance: number
-          stamps_balance: number
-          updated_at: string
-        }
-        Insert: {
-          branch_id?: string | null
-          created_at?: string
-          customer_code: string
-          full_name: string
-          id?: string
-          is_active?: boolean
-          merchant_id: string
-          notes?: string | null
-          phone_number?: string | null
-          points_balance?: number
-          stamps_balance?: number
-          updated_at?: string
-        }
-        Update: {
-          branch_id?: string | null
-          created_at?: string
-          customer_code?: string
-          full_name?: string
-          id?: string
-          is_active?: boolean
-          merchant_id?: string
-          notes?: string | null
-          phone_number?: string | null
-          points_balance?: number
-          stamps_balance?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "loyalty_customers_branch_id_merchant_id_fkey"
-            columns: ["branch_id", "merchant_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id", "merchant_id"]
-          },
-          {
-            foreignKeyName: "loyalty_customers_merchant_id_fkey"
-            columns: ["merchant_id"]
-            isOneToOne: false
-            referencedRelation: "merchants"
             referencedColumns: ["id"]
           },
         ]
       }
-      loyalty_rewards: {
+      merchant_feedback: {
         Row: {
+          comment: string | null
           created_at: string
-          description: string | null
           id: string
-          is_active: boolean
           merchant_id: string
-          name: string
-          points_cost: number
+          rating: number
           updated_at: string
         }
         Insert: {
+          comment?: string | null
           created_at?: string
-          description?: string | null
           id?: string
-          is_active?: boolean
           merchant_id: string
-          name: string
-          points_cost: number
+          rating: number
           updated_at?: string
         }
         Update: {
+          comment?: string | null
           created_at?: string
-          description?: string | null
           id?: string
-          is_active?: boolean
           merchant_id?: string
-          name?: string
-          points_cost?: number
+          rating?: number
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "loyalty_rewards_merchant_id_fkey"
+            foreignKeyName: "merchant_feedback_merchant_id_fkey"
             columns: ["merchant_id"]
             isOneToOne: false
             referencedRelation: "merchants"
@@ -421,7 +282,7 @@ export type Database = {
           created_at?: string
           id?: string
           merchant_id: string
-          role: string
+          role?: string
           status?: string
           updated_at?: string
           user_id: string
@@ -438,11 +299,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "merchant_memberships_branch_id_merchant_id_fkey"
-            columns: ["branch_id", "merchant_id"]
+            foreignKeyName: "merchant_memberships_branch_id_fkey"
+            columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
-            referencedColumns: ["id", "merchant_id"]
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "merchant_memberships_merchant_id_fkey"
@@ -478,7 +339,7 @@ export type Database = {
           provider: string
           sort_order?: number
           updated_at?: string
-          ussd_template: string
+          ussd_template?: string
         }
         Update: {
           created_at?: string
@@ -566,11 +427,11 @@ export type Database = {
           id: string
           initiated_at: string
           merchant_id: string
-          payer_reference: string | null
-          payment_method_id: string
+          payment_method_id: string | null
           provider: string
           source: string
           status: string
+          updated_at: string
         }
         Insert: {
           amount: number
@@ -583,11 +444,11 @@ export type Database = {
           id?: string
           initiated_at?: string
           merchant_id: string
-          payer_reference?: string | null
-          payment_method_id: string
+          payment_method_id?: string | null
           provider: string
           source?: string
           status?: string
+          updated_at?: string
         }
         Update: {
           amount?: number
@@ -600,26 +461,26 @@ export type Database = {
           id?: string
           initiated_at?: string
           merchant_id?: string
-          payer_reference?: string | null
-          payment_method_id?: string
+          payment_method_id?: string | null
           provider?: string
           source?: string
           status?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "payment_sessions_branch_merchant_fkey"
-            columns: ["branch_id", "merchant_id"]
+            foreignKeyName: "payment_sessions_branch_id_fkey"
+            columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
-            referencedColumns: ["id", "merchant_id"]
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payment_sessions_device_merchant_fkey"
-            columns: ["device_id", "merchant_id"]
+            foreignKeyName: "payment_sessions_device_id_fkey"
+            columns: ["device_id"]
             isOneToOne: false
             referencedRelation: "devices"
-            referencedColumns: ["id", "merchant_id"]
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "payment_sessions_merchant_id_fkey"
@@ -666,11 +527,15 @@ export type Database = {
       }
       sms_readers: {
         Row: {
+          android_version: string | null
           app_version: string | null
           branch_id: string | null
           created_at: string
+          device_manufacturer: string | null
+          device_model: string | null
           id: string
           label: string
+          last_seen_at: string | null
           last_sync_at: string | null
           merchant_id: string
           paired_at: string | null
@@ -680,11 +545,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          android_version?: string | null
           app_version?: string | null
           branch_id?: string | null
           created_at?: string
+          device_manufacturer?: string | null
+          device_model?: string | null
           id?: string
-          label?: string
+          label: string
+          last_seen_at?: string | null
           last_sync_at?: string | null
           merchant_id: string
           paired_at?: string | null
@@ -694,11 +563,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          android_version?: string | null
           app_version?: string | null
           branch_id?: string | null
           created_at?: string
+          device_manufacturer?: string | null
+          device_model?: string | null
           id?: string
           label?: string
+          last_seen_at?: string | null
           last_sync_at?: string | null
           merchant_id?: string
           paired_at?: string | null
@@ -709,11 +582,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sms_readers_branch_id_merchant_id_fkey"
-            columns: ["branch_id", "merchant_id"]
+            foreignKeyName: "sms_readers_branch_id_fkey"
+            columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
-            referencedColumns: ["id", "merchant_id"]
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "sms_readers_merchant_id_fkey"
@@ -758,20 +631,6 @@ export type Database = {
         Args: { _category_id: string; _transaction_id: string }
         Returns: undefined
       }
-      complete_sms_reader_pairing: {
-        Args: {
-          _app_version: string
-          _device_secret_hash: string
-          _pairing_code_hash: string
-          _sim_last4: string
-        }
-        Returns: {
-          branch_id: string
-          merchant_id: string
-          reader_id: string
-          reader_label: string
-        }[]
-      }
       confirm_payment_session: {
         Args: { _session_id: string }
         Returns: undefined
@@ -783,43 +642,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      ingest_sms_reader_batch: {
-        Args: {
-          _app_version: string
-          _device_secret_hash: string
-          _events: Json
-        }
-        Returns: number
-      }
       is_merchant_manager: { Args: { _merchant_id: string }; Returns: boolean }
       is_merchant_member: {
-        Args: { _branch_id?: string; _merchant_id: string }
+        Args: { _branch_id: string; _merchant_id: string }
         Returns: boolean
-      }
-      register_sms_reader_pairing: {
-        Args: {
-          _branch_id: string
-          _expires_at: string
-          _label: string
-          _merchant_id: string
-          _pairing_code_hash: string
-          _requested_by: string
-        }
-        Returns: {
-          expires_at: string
-          reader_id: string
-          reader_label: string
-        }[]
-      }
-      resolve_public_device: {
-        Args: { _token: string }
-        Returns: {
-          branch_id: string
-          device_id: string
-          device_label: string
-          device_type: string
-          merchant_key: string
-        }[]
       }
     }
     Enums: {
